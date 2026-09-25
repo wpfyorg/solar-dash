@@ -9,6 +9,8 @@ browsable calendar and year of history, and PWA install support.
 It's a Cloudflare Worker: no server to run, a free-tier deployment, and a
 password gate so it's safe to leave on the public internet.
 
+![The hero card: live production, today's curve against yesterday's dotted ghost](docs/screenshot.png)
+
 ## Why this exists
 
 The official WAAREE app is slow, ad-hoc, and doesn't make it easy to just
