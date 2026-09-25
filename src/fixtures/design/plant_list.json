@@ -1,0 +1,16 @@
+{
+  "currentPage": 1,
+  "pageSize": 10,
+  "total": 1,
+  "plants": [
+    {
+      "stationID": "st-001",
+      "name": "Home",
+      "capacity": 4,
+      "systemCapacity": 3.5,
+      "generationToday": 14.0,
+      "batteryEnable": false,
+      "status": 1
+    }
+  ]
+}

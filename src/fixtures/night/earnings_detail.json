@@ -1,0 +1,9 @@
+{
+  "power": 0.0,
+  "systemCapacity": 5.4,
+  "currency": null,
+  "today": { "earnings": 0.0, "generation": 18.2 },
+  "month": { "earnings": 0.0, "generation": 480.0 },
+  "year": { "earnings": 0.0, "generation": 4500.0 },
+  "cumulate": { "earnings": 0.0, "generation": 8412.3 }
+}

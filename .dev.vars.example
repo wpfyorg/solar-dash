@@ -1,0 +1,12 @@
+# Copy this file to .dev.vars for local `wrangler dev` (never committed —
+# see .gitignore). Real deploys use `scripts/set-secrets.sh` instead, which
+# pipes these to `wrangler secret put` and never writes them to a file.
+
+WAAREE_USERNAME=your_waaree_username
+# md5 of your WAAREE password, lowercase hex — never the plaintext password.
+WAAREE_PASSWORD_MD5=0000000000000000000000000000000
+# The password you'll type at /login to see the dashboard. Use a throwaway
+# value for local testing.
+DASH_PASSWORD=dev-only-dummy-password
+# openssl rand -hex 32
+SESSION_SECRET=0000000000000000000000000000000000000000000000000000000000000000

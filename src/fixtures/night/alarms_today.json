@@ -1,0 +1,8 @@
+{
+  "currentPage": 0,
+  "pageSize": 0,
+  "total": 1,
+  "data": [
+    { "time": "2026-09-25 19:42", "content": "Grid voltage briefly out of range", "code": 1032, "deviceSN": "WVX5000ABCDEF12", "alarmType": 2 }
+  ]
+}

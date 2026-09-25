@@ -1,0 +1,506 @@
+[
+ {
+  "variable": "generation",
+  "miniData": [],
+  "data": [
+   {
+    "index": 1,
+    "value": 11.63
+   },
+   {
+    "index": 2,
+    "value": 10.28
+   },
+   {
+    "index": 3,
+    "value": 14.18
+   },
+   {
+    "index": 4,
+    "value": 9.67
+   },
+   {
+    "index": 5,
+    "value": 13.28
+   },
+   {
+    "index": 6,
+    "value": 11.95
+   },
+   {
+    "index": 7,
+    "value": 9.55
+   },
+   {
+    "index": 8,
+    "value": 13.06
+   },
+   {
+    "index": 9,
+    "value": 9.39
+   },
+   {
+    "index": 10,
+    "value": 12.48
+   },
+   {
+    "index": 11,
+    "value": 9.64
+   },
+   {
+    "index": 12,
+    "value": 9.81
+   },
+   {
+    "index": 13,
+    "value": 12.41
+   },
+   {
+    "index": 14,
+    "value": 15.55
+   },
+   {
+    "index": 15,
+    "value": 10.07
+   },
+   {
+    "index": 16,
+    "value": 10.84
+   },
+   {
+    "index": 17,
+    "value": 13.99
+   },
+   {
+    "index": 18,
+    "value": 16.49
+   },
+   {
+    "index": 19,
+    "value": 13.6
+   },
+   {
+    "index": 20,
+    "value": 12.19
+   },
+   {
+    "index": 21,
+    "value": 16.71
+   },
+   {
+    "index": 22,
+    "value": 9.46
+   },
+   {
+    "index": 23,
+    "value": 15.8
+   },
+   {
+    "index": 24,
+    "value": 11.36
+   },
+   {
+    "index": 25,
+    "value": 10.23
+   },
+   {
+    "index": 26,
+    "value": 0.0
+   },
+   {
+    "index": 27,
+    "value": 0.0
+   },
+   {
+    "index": 28,
+    "value": 0.0
+   },
+   {
+    "index": 29,
+    "value": 0.0
+   },
+   {
+    "index": 30,
+    "value": 0.0
+   }
+  ]
+ },
+ {
+  "variable": "feedin",
+  "miniData": [],
+  "data": [
+   {
+    "index": 1,
+    "value": 11.63
+   },
+   {
+    "index": 2,
+    "value": 10.28
+   },
+   {
+    "index": 3,
+    "value": 14.18
+   },
+   {
+    "index": 4,
+    "value": 9.67
+   },
+   {
+    "index": 5,
+    "value": 13.28
+   },
+   {
+    "index": 6,
+    "value": 11.95
+   },
+   {
+    "index": 7,
+    "value": 9.55
+   },
+   {
+    "index": 8,
+    "value": 13.06
+   },
+   {
+    "index": 9,
+    "value": 9.39
+   },
+   {
+    "index": 10,
+    "value": 12.48
+   },
+   {
+    "index": 11,
+    "value": 9.64
+   },
+   {
+    "index": 12,
+    "value": 9.81
+   },
+   {
+    "index": 13,
+    "value": 12.41
+   },
+   {
+    "index": 14,
+    "value": 15.55
+   },
+   {
+    "index": 15,
+    "value": 10.07
+   },
+   {
+    "index": 16,
+    "value": 10.84
+   },
+   {
+    "index": 17,
+    "value": 13.99
+   },
+   {
+    "index": 18,
+    "value": 16.49
+   },
+   {
+    "index": 19,
+    "value": 13.6
+   },
+   {
+    "index": 20,
+    "value": 12.19
+   },
+   {
+    "index": 21,
+    "value": 16.71
+   },
+   {
+    "index": 22,
+    "value": 9.46
+   },
+   {
+    "index": 23,
+    "value": 15.8
+   },
+   {
+    "index": 24,
+    "value": 11.36
+   },
+   {
+    "index": 25,
+    "value": 10.23
+   },
+   {
+    "index": 26,
+    "value": 0.0
+   },
+   {
+    "index": 27,
+    "value": 0.0
+   },
+   {
+    "index": 28,
+    "value": 0.0
+   },
+   {
+    "index": 29,
+    "value": 0.0
+   },
+   {
+    "index": 30,
+    "value": 0.0
+   }
+  ]
+ },
+ {
+  "variable": "loads",
+  "miniData": [],
+  "data": [
+   {
+    "index": 1,
+    "value": 0.0
+   },
+   {
+    "index": 2,
+    "value": 0.0
+   },
+   {
+    "index": 3,
+    "value": 0.0
+   },
+   {
+    "index": 4,
+    "value": 0.0
+   },
+   {
+    "index": 5,
+    "value": 0.0
+   },
+   {
+    "index": 6,
+    "value": 0.0
+   },
+   {
+    "index": 7,
+    "value": 0.0
+   },
+   {
+    "index": 8,
+    "value": 0.0
+   },
+   {
+    "index": 9,
+    "value": 0.0
+   },
+   {
+    "index": 10,
+    "value": 0.0
+   },
+   {
+    "index": 11,
+    "value": 0.0
+   },
+   {
+    "index": 12,
+    "value": 0.0
+   },
+   {
+    "index": 13,
+    "value": 0.0
+   },
+   {
+    "index": 14,
+    "value": 0.0
+   },
+   {
+    "index": 15,
+    "value": 0.0
+   },
+   {
+    "index": 16,
+    "value": 0.0
+   },
+   {
+    "index": 17,
+    "value": 0.0
+   },
+   {
+    "index": 18,
+    "value": 0.0
+   },
+   {
+    "index": 19,
+    "value": 0.0
+   },
+   {
+    "index": 20,
+    "value": 0.0
+   },
+   {
+    "index": 21,
+    "value": 0.0
+   },
+   {
+    "index": 22,
+    "value": 0.0
+   },
+   {
+    "index": 23,
+    "value": 0.0
+   },
+   {
+    "index": 24,
+    "value": 0.0
+   },
+   {
+    "index": 25,
+    "value": 0.0
+   },
+   {
+    "index": 26,
+    "value": 0.0
+   },
+   {
+    "index": 27,
+    "value": 0.0
+   },
+   {
+    "index": 28,
+    "value": 0.0
+   },
+   {
+    "index": 29,
+    "value": 0.0
+   },
+   {
+    "index": 30,
+    "value": 0.0
+   }
+  ]
+ },
+ {
+  "variable": "gridConsumption",
+  "miniData": [],
+  "data": [
+   {
+    "index": 1,
+    "value": 0.0
+   },
+   {
+    "index": 2,
+    "value": 0.0
+   },
+   {
+    "index": 3,
+    "value": 0.0
+   },
+   {
+    "index": 4,
+    "value": 0.0
+   },
+   {
+    "index": 5,
+    "value": 0.0
+   },
+   {
+    "index": 6,
+    "value": 0.0
+   },
+   {
+    "index": 7,
+    "value": 0.0
+   },
+   {
+    "index": 8,
+    "value": 0.0
+   },
+   {
+    "index": 9,
+    "value": 0.0
+   },
+   {
+    "index": 10,
+    "value": 0.0
+   },
+   {
+    "index": 11,
+    "value": 0.0
+   },
+   {
+    "index": 12,
+    "value": 0.0
+   },
+   {
+    "index": 13,
+    "value": 0.0
+   },
+   {
+    "index": 14,
+    "value": 0.0
+   },
+   {
+    "index": 15,
+    "value": 0.0
+   },
+   {
+    "index": 16,
+    "value": 0.0
+   },
+   {
+    "index": 17,
+    "value": 0.0
+   },
+   {
+    "index": 18,
+    "value": 0.0
+   },
+   {
+    "index": 19,
+    "value": 0.0
+   },
+   {
+    "index": 20,
+    "value": 0.0
+   },
+   {
+    "index": 21,
+    "value": 0.0
+   },
+   {
+    "index": 22,
+    "value": 0.0
+   },
+   {
+    "index": 23,
+    "value": 0.0
+   },
+   {
+    "index": 24,
+    "value": 0.0
+   },
+   {
+    "index": 25,
+    "value": 0.0
+   },
+   {
+    "index": 26,
+    "value": 0.0
+   },
+   {
+    "index": 27,
+    "value": 0.0
+   },
+   {
+    "index": 28,
+    "value": 0.0
+   },
+   {
+    "index": 29,
+    "value": 0.0
+   },
+   {
+    "index": 30,
+    "value": 0.0
+   }
+  ]
+ }
+]

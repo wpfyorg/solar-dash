@@ -1,0 +1,15 @@
+{
+  "currentPage": 1,
+  "pageSize": 50,
+  "total": 1,
+  "devices": [
+    {
+      "deviceSN": "B0VS332CATEST001",
+      "deviceType": "H1-3.6-E",
+      "status": 1,
+      "power": 2.84,
+      "generationToday": 14.0,
+      "generationTotal": 968.0
+    }
+  ]
+}

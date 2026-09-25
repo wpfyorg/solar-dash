@@ -1,0 +1,13 @@
+{
+  "flow": { "solarToDevice": 1, "genToHidden": 1, "loadToHidden": -1, "gridToHidden": -1, "deviceToHidden": 1, "batToDevice": 0, "chargerToHidden": 0 },
+  "node": {
+    "solar": { "display": true, "power": { "display": true, "unit": "kW", "value": "2.84" } },
+    "device": { "display": true, "power": { "display": true, "unit": "kW", "value": "2.84" } },
+    "grid": { "display": false, "power": { "display": false, "unit": "kW", "value": "" } },
+    "load": { "display": false, "power": { "display": false, "unit": "kW", "value": "" } },
+    "bat": { "display": false, "power": { "display": false, "unit": "kW", "value": "" } },
+    "gen": { "display": false, "power": { "display": false, "unit": "kW", "value": "" } },
+    "charger": { "display": false, "power": { "display": false, "unit": "kW", "value": "" } }
+  },
+  "status": { "state": 1, "lastUpdateDate": "Updated 2 minutes ago", "yieldToday": "14.0" }
+}

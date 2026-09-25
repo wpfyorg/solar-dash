@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "solar-dash",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": "public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "SOLAR_KV",
+      // Placeholder — run scripts/setup.sh to create the real namespace and
+      // patch its id in here. Do not deploy with this placeholder.
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ],
+
+  "workers_dev": true,
+  // Optional: to serve this on your own domain instead of (or alongside)
+  // *.workers.dev, add a custom domain here — the domain's zone must be on
+  // the same Cloudflare account you're deploying with:
+  // "routes": [{ "pattern": "solar.example.com", "custom_domain": true }],
+
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+
+  "vars": {
+    // Your plant's coordinates, for the sunrise/sunset the hero card shows.
+    // The dashboard otherwise assumes India: Asia/Kolkata (UTC+5:30) and
+    // INR currency, since it's built for WAAREE/FoxESS-white-label
+    // accounts, which are India-only. See README.md.
+    "LAT": "28.6139",
+    "LON": "77.2090",
+    "TZ_OFFSET_MIN": "330",
+    "MOCK": "0",
+    "MOCK_SCENARIO": "design"
+  }
+}

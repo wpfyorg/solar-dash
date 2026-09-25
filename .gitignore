@@ -1,0 +1,10 @@
+node_modules/
+.wrangler/
+.dev.vars
+dist/
+public/index.html
+public/manifest.webmanifest
+public/sw.js
+public/font.woff2
+public/icons/
+*.log

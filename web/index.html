@@ -1,0 +1,1227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/icon-192.png">
+<meta name="theme-color" content="#EAF1F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1726" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Solar">
+<script>
+// `?theme=light|dark` forces a theme regardless of the OS preference —
+// for deterministic design-comparison screenshots. Runs before first
+// paint (synchronous, in <head>) so there's no flash of the wrong theme.
+(function () {
+  var t = new URLSearchParams(location.search).get('theme');
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: url('/font.woff2') format('woff2-variations'), url('/font.woff2') format('woff2');
+  font-weight: 400 600;
+  font-display: swap;
+}
+:root {
+  color-scheme: light dark;
+  --font: 'Schibsted Grotesk', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
+  --leaf: #2E9E5B; --leaf-deep: #1D6B3C; --grid: #2F6FA8; --plum: #6E4A7E;
+  --ghost: #8FA1B6;
+  --alert: #B4322A; --alert-soft: #F6E2E0;
+  --warn: #8A5A00; --warn-soft: #FBEFD6;
+  --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
+  --focus: var(--ink);
+  --gap: 64px;
+  --rail: 240px;
+  --fs-plant: 24px; --fs-live: 96px; --fs-live-unit: 38px;
+  --fs-head: 20px; --fs-ledger: 32px; --fs-body: 15px; --fs-small: 13px;
+  --hero-h: 460px;
+}
+@media (max-width: 1099px) { :root { --fs-plant: 20px; --gap: 48px; --rail: 0; --hero-h: 480px; } }
+@media (max-width: 480px) { :root { --fs-live: 64px; --fs-live-unit: 26px; --gap: 40px; --hero-h: 460px; } }
+/* `data-theme` (set on <html> by a `?theme=light|dark` query param, see the
+   script below) forces a theme regardless of the OS preference — used for
+   deterministic design-comparison screenshots on a machine whose OS theme
+   would otherwise win. `:root[data-theme="dark"]` mirrors the prefers-color-
+   scheme block exactly; `:root[data-theme="light"]` re-asserts the default
+   light values so they win even when the OS is in dark mode. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sky: #0E1726; --paper: #152238; --ink: #E6EEF6; --ink-soft: #93A4B8; --mist: #2A3A52; --mist-strong: #405674;
+    --leaf: #5CCB8A; --leaf-deep: #5CCB8A; --grid: #6FA8DC; --plum: #B08CC2;
+    --ghost: #6F829C;
+    --alert: #F08A80; --alert-soft: #3A1F24;
+    --warn: #F2C46A; --warn-soft: #33291A;
+    --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+  }
+}
+:root[data-theme="dark"] {
+  --sky: #0E1726; --paper: #152238; --ink: #E6EEF6; --ink-soft: #93A4B8; --mist: #2A3A52; --mist-strong: #405674;
+  --leaf: #5CCB8A; --leaf-deep: #5CCB8A; --grid: #6FA8DC; --plum: #B08CC2;
+  --ghost: #6F829C;
+  --alert: #F08A80; --alert-soft: #3A1F24;
+  --warn: #F2C46A; --warn-soft: #33291A;
+  --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+}
+:root[data-theme="light"] {
+  --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
+  --leaf: #2E9E5B; --leaf-deep: #1D6B3C; --grid: #2F6FA8; --plum: #6E4A7E;
+  --ghost: #8FA1B6;
+  --alert: #B4322A; --alert-soft: #F6E2E0;
+  --warn: #8A5A00; --warn-soft: #FBEFD6;
+  --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
+body { font: 400 var(--fs-body)/1.45 var(--font); background: var(--sky); color: var(--ink); }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 56px; }
+@media (max-width: 480px) { .wrap { padding: 0 16px 40px; } }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+noscript { display: block; padding: 16px; color: var(--ink-soft); }
+
+/* header */
+header.app-header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; gap: 12px; flex-wrap: wrap; }
+header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight: 600; margin: 0; }
+.status-line { font-size: var(--fs-small); color: var(--ink-soft); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); display: inline-block; flex: none; }
+.dot.hollow { background: transparent; border: 1.5px solid var(--ink-soft); }
+
+/* banners */
+.banner { display: none; align-items: center; gap: 10px; border-radius: 8px; padding: 12px 16px; font-size: var(--fs-small); margin-bottom: 20px; }
+.banner.show { display: flex; }
+.banner button { height: 32px; padding: 0 12px; border-radius: 8px; background: var(--paper); border: 1px solid currentColor; color: inherit; font: inherit; cursor: pointer; }
+.banner-warn { background: var(--warn-soft); color: var(--warn); }
+.banner-alert { background: var(--alert-soft); color: var(--alert); }
+
+/* not configured / loading */
+.center-panel { display: flex; justify-content: center; padding: 15vh 16px; }
+.center-card { max-width: 460px; text-align: left; }
+.center-card h2 { font-size: 22px; font-weight: 600; margin: 0 0 10px; }
+.center-card p { color: var(--ink-soft); margin: 0 0 16px; }
+.center-card code { display: block; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.center-card button { margin-top: 16px; height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+
+/* hero — a CSS grid with named areas, so the same three blocks (top
+   figure, arc/right column, bottom "so far") can be rearranged per
+   breakpoint declaratively instead of via absolute-position hacks, which
+   is what caused the mobile overlap bug (hero-sofar was absolutely
+   positioned relative to a shrink-wrapped ancestor, not the card). */
+.hero { background: var(--paper); border-radius: 28px; position: relative; overflow: hidden; height: var(--hero-h); }
+.hero-inner {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "top right" "sofar right";
+  padding: 32px 40px; gap: 8px 24px;
+}
+/* Tablet (v3-tablet.png, ~768): unlike phone, this keeps the figure and
+   "so far" side by side in a top row (not stacked), with the arc as its
+   own full-width area below — a third distinct arrangement, not just a
+   narrower desktop or a wider phone. The card's height is content-driven
+   here rather than the fixed --hero-h desktop/phone use. */
+@media (max-width: 1099px) and (min-width: 601px) {
+  .hero { height: auto; }
+  .hero-inner { position: static; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-template-areas: "top sofar" "right right"; padding: 28px 32px; gap: 20px 24px; }
+}
+@media (max-width: 600px) {
+  .hero-inner { grid-template-columns: 1fr; grid-template-rows: auto auto auto; grid-template-areas: "top" "right" "sofar"; padding: 24px 20px; gap: 16px 0; }
+}
+@media (max-width: 480px) { .hero-inner { padding: 20px 16px; } }
+/* #hero-live-wrap groups hero-top + hero-sofar only so JS can hide both
+   together for the meter variant; `display: contents` lets its own two
+   children act as direct grid items (each keeping its own grid-area)
+   instead of being sized by an intermediate box. */
+#hero-live-wrap { display: contents; }
+.hero-top { grid-area: top; position: relative; z-index: 4; }
+.hero-sofar { grid-area: sofar; align-self: end; position: relative; z-index: 4; }
+/* Tablet: "so far" sits beside the figure at the top of the row (design),
+   not pinned to the row's bottom like the desktop/phone bottom-of-card
+   placement. */
+@media (max-width: 1099px) and (min-width: 601px) { .hero-sofar { align-self: start; } }
+.hero-figure .num { font-size: var(--fs-live); font-weight: 600; letter-spacing: -0.02em; line-height: 0.92; }
+.hero-figure .unit { font-size: var(--fs-live-unit); font-weight: 500; color: var(--ink-soft); margin-left: 8px; }
+.hero-sub-mode { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 6px; }
+.hero-sofar .val { font-size: 20px; font-weight: 600; }
+@media (max-width: 480px) { .hero-sofar .val { font-size: 17px; } }
+.hero-sofar .vs { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 2px; }
+.hero-sentences { grid-area: top; position: relative; z-index: 4; }
+.hero-sentences p { margin: 4px 0; font-size: 17px; font-weight: 500; }
+.hero-sentences .s-solar { color: var(--leaf-deep); }
+.hero-sentences .s-grid { color: var(--grid); }
+.hero-sentences .s-plum { color: var(--plum); }
+.hero-right { grid-area: right; position: relative; min-width: 0; }
+/* The arc needs real height to render into — on desktop the grid row
+   (1fr) already spans the full remaining card height, but on mobile/
+   tablet "right" is its own auto-sized row, so it needs an explicit
+   height (an absolutely-positioned arc-wrap child can't contribute to
+   auto sizing). */
+@media (max-width: 1099px) { .hero-right { height: 260px; } }
+@media (max-width: 480px) { .hero-right { height: 220px; } }
+.cap-label { position: absolute; left: 0; top: 0; font-size: var(--fs-small); color: var(--ink-soft); }
+/* The design's phone hero frame has no capacity hairline at all, but the
+   tablet frame keeps it (spanning the full-width arc row) — only phone
+   (<=600) hides it. */
+@media (max-width: 600px) { .cap-label, #cap-line { display: none; } }
+.arc-wrap { position: absolute; inset: 0; }
+.arc-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* `top` is set inline by drawArc(), as a percentage matching the SVG's
+   actual horizon line — the one true source of "where the horizon is",
+   shared with .cap-label so nothing has to be hand-tuned per breakpoint. */
+.sun-row { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; font-size: var(--fs-small); padding-top: 10px; }
+@media (max-width: 600px) { .sun-row { left: 20px; right: 20px; } }
+@media (max-width: 480px) { .sun-row { left: 16px; right: 16px; } }
+.sun-row .stack { display: flex; flex-direction: column; gap: 2px; }
+.sun-row .stack.now { align-items: center; }
+.sun-row .stack.sunset { align-items: flex-end; }
+.sun-row .t { color: var(--ink); font-weight: 600; font-size: 15px; }
+.sun-row .w { color: var(--ink-soft); }
+.now-glow { animation: pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes pulse { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .now-glow { animation: none; opacity: 0.9; } }
+.hero.stale .arc-wrap { opacity: 0.55; }
+.hero.stale .now-glow { display: none; }
+.arc-tooltip { position: absolute; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 8px 10px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; z-index: 5; }
+.ghost-label { font-size: 12px; fill: var(--ghost); font-weight: 500; }
+
+/* rail sections */
+.section-row { display: grid; grid-template-columns: var(--rail) 1fr; gap: 24px; margin-top: var(--gap); align-items: start; }
+@media (max-width: 1099px) { .section-row { display: block; margin-top: var(--gap); } }
+.section-head { font-size: var(--fs-head); font-weight: 600; margin: 0 0 4px; }
+@media (max-width: 1099px) { .section-head { margin-bottom: 16px; } }
+.section-note { font-size: var(--fs-body); color: var(--ink-soft); }
+
+/* today ledger */
+.ledger { display: flex; gap: 32px; }
+@media (max-width: 600px) { .ledger { flex-wrap: wrap; gap: 20px 24px; } }
+@media (max-width: 480px) { .ledger { gap: 20px 16px; } }
+.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 120px; }
+@media (max-width: 480px) { .ledger .cell { flex: 1 1 40%; } }
+.ledger .cell .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.ledger .cell .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+/* nowrap only where a cell is actually wide enough for it (desktop, four
+   ~190px+ cells) — at tablet widths the same four-cells-in-a-row layout
+   gives each cell only ~150px, so a forced nowrap just overflows into the
+   next cell instead of wrapping, running two labels together. */
+.ledger .cell .label { font-size: var(--fs-body); color: var(--ink-soft); margin-top: 6px; }
+@media (min-width: 1100px) { .ledger .cell .label { white-space: nowrap; } }
+
+/* month body: calendar + stats column */
+/* Grid, not flex: the chart/calendar column is `max-content` (its own
+   natural width) and the stats column takes the rest as `1fr` — this can
+   never wrap the stats below the chart the way flex + gap arithmetic could
+   (a fixed-width chart plus its gap plus the stats' natural width came
+   within ~10px of the row's available width, so flex-wrap kicked in). */
+.month-body, .year-body { display: grid; grid-template-columns: max-content 1fr; gap: 56px; align-items: start; }
+@media (max-width: 1099px) { .month-body, .year-body { grid-template-columns: 1fr; } }
+.stats-col { display: flex; flex-direction: column; gap: 24px; padding-top: 8px; min-width: 0; }
+@media (max-width: 1099px) { .stats-col { padding-top: 20px; flex-direction: row; flex-wrap: wrap; gap: 24px 40px; } }
+.stat .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.stat .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+.stat .label { font-size: var(--fs-body); color: var(--ink-soft); margin-top: 2px; }
+
+/* calendar */
+.weekdays { display: flex; gap: 8px; margin-bottom: 8px; }
+.weekdays span { width: 76px; font-size: var(--fs-small); color: var(--ink-soft); padding-left: 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 76px); gap: 8px; }
+.cal-day { width: 76px; height: 64px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 10px; font-size: var(--fs-small); color: var(--cal-text); position: relative; cursor: default; }
+.cal-day .d { font-size: var(--fs-small); }
+.cal-day .v { font-size: 15px; font-weight: 600; }
+.cal-day.empty-mist { outline: 1px solid var(--mist); outline-offset: -0.5px; }
+.cal-day.today { outline: 2px solid var(--ink); outline-offset: -1px; }
+.cal-day.today .d { font-weight: 600; }
+.cal-day.not-installed .d { color: var(--mist-strong); }
+@media (max-width: 1099px) {
+  .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .weekdays { gap: 6px; }
+  .weekdays span { width: auto; flex: 1 1 0; padding-left: 4px; text-align: left; }
+  .cal-day { width: auto; height: auto; aspect-ratio: 1; padding: 6px 8px; }
+}
+
+/* year strip */
+/* min-width: 0 overrides the grid item default of min-width: auto (=
+   min-content) — without it, a grid item can't shrink below its content's
+   intrinsic width even when the track is narrower, which is exactly what
+   overflowed the card's right edge at 375px (year-chart wanted ~365px
+   in a 343px track). */
+.year-chart { width: 100%; max-width: 580px; min-width: 0; }
+.year-bars { display: flex; align-items: flex-end; gap: 8px; height: 170px; position: relative; }
+.not-installed-note { position: absolute; left: 0; bottom: 8px; font-size: var(--fs-small); color: var(--ink-soft); white-space: nowrap; pointer-events: none; }
+@media (max-width: 480px) { .year-bars { height: 120px; } }
+.year-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+.year-col .val { font-size: 13px; font-weight: 600; color: var(--ink); }
+.year-bar { width: 22px; max-width: 60%; background: var(--leaf); border-radius: 5px 5px 0 0; }
+.year-bar.dash { width: 14px; height: 2px; background: var(--mist-strong); border-radius: 1px; }
+.year-baseline { height: 1px; background: var(--mist); }
+.year-labels { display: flex; gap: 8px; padding-top: 8px; }
+.year-labels span { flex: 1 1 0; text-align: center; font-size: var(--fs-small); color: var(--ink-soft); }
+.year-labels span.current { color: var(--ink); font-weight: 600; }
+
+/* system footer */
+.sys-body p { margin: 0 0 6px; font-size: 17px; }
+.sys-body .facts, .sys-body .refresh { font-size: var(--fs-body); color: var(--ink-soft); font-weight: 400; }
+.sys-body .online { color: var(--ink); }
+.sys-body .alert-text { color: var(--alert); }
+.sys-body .meter-note { font-size: var(--fs-small); color: var(--ink-soft); margin-top: 16px; }
+/* month navigation + clickable days/bars */
+.month-rail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+@media (max-width: 1099px) { .month-rail { margin-bottom: 16px; } .month-rail .section-head { margin-bottom: 0; } }
+.month-nav { display: flex; gap: 8px; flex: none; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none; }
+.icon-btn:hover:not(:disabled) { border-color: var(--mist-strong); }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.icon-btn svg { width: 16px; height: 16px; }
+.month-body.loading { opacity: 0.45; transition: opacity 0.2s; }
+.month-error { font-size: var(--fs-body); color: var(--ink-soft); }
+.month-error button { margin-left: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.cal-day[data-date] { cursor: pointer; transition: box-shadow 0.12s; }
+.cal-day[data-date]:hover { box-shadow: 0 0 0 2px var(--leaf-deep) inset; }
+.cal-day.selected { box-shadow: 0 0 0 2px var(--leaf-deep) inset; }
+.year-col[data-ym] { cursor: pointer; }
+.year-col[data-ym]:hover .year-bar { filter: brightness(1.12); }
+.year-col.viewing .year-bar { box-shadow: 0 0 0 2px var(--leaf-deep); }
+.year-labels span.viewing { color: var(--leaf-deep); font-weight: 600; }
+
+/* day detail dialog */
+.day-dialog { border: none; padding: 0; background: transparent; color: var(--ink); max-width: none; max-height: none; width: min(760px, calc(100vw - 32px)); overflow: visible; }
+.day-dialog::backdrop { background: rgba(14, 23, 38, 0.45); }
+.day-card { background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
+.day-top { display: flex; align-items: center; gap: 8px; }
+.day-top h2 { font-size: var(--fs-head); font-weight: 600; margin: 0; flex: 1 1 auto; min-width: 0; }
+.day-top .sub { display: block; font-size: var(--fs-small); color: var(--ink-soft); font-weight: 400; margin-top: 2px; }
+.day-stats { display: flex; gap: 32px; margin: 20px 0 8px; flex-wrap: wrap; }
+.day-stats .stat { border-top: 1px solid var(--mist); padding-top: 10px; flex: 1 1 0; min-width: 110px; }
+.day-stats .figure { font-size: 26px; }
+.day-chart { position: relative; height: 260px; margin-top: 12px; }
+.day-chart svg { width: 100%; height: 100%; display: block; overflow: visible; touch-action: pan-y; }
+.day-chart .axis { font-size: 12px; fill: var(--ink-soft); }
+.day-chart .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ink-soft); font-size: var(--fs-body); text-align: center; }
+.day-chart .msg button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.day-tip { position: absolute; top: 0; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; }
+@media (max-width: 600px) {
+  .day-dialog { width: 100vw; margin: auto 0 0; }
+  .day-card { border-radius: 24px 24px 0 0; padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .day-stats { gap: 16px; }
+  .day-stats .stat { min-width: 90px; }
+  .day-stats .figure { font-size: 22px; }
+  .day-chart { height: 210px; }
+}
+
+.tooltip { position: absolute; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 8px 10px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; z-index: 6; }
+</style>
+</head>
+<body>
+<noscript>This dashboard needs JavaScript.</noscript>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-alert" viewBox="0 0 20 20"><path d="M10 2.5 18 17H2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><line x1="10" y1="8" x2="10" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="10" cy="14.6" r="0.9" fill="currentColor"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M10 5v5l3 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="app-header">
+    <h1 id="plant-name">Home</h1>
+    <div class="status-line" id="status-line"><span class="dot hollow" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+  </header>
+
+  <div class="banner banner-alert" id="banner-auth"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><span>WAAREE rejected the saved login. Run cf-worker/scripts/set-secrets.sh again to update it.</span></div>
+  <div class="banner banner-alert" id="banner-api"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><span id="api-msg">Can't reach WAAREE right now.</span><button id="retry-api">Retry now</button></div>
+  <div class="banner banner-warn" id="banner-stale"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-clock"/></svg><span id="stale-msg">Showing old data.</span><button id="retry-stale">Retry now</button></div>
+
+  <div id="app-body">
+    <main id="main-content" style="display:none">
+      <section class="hero" id="hero" aria-label="Today's sun">
+        <div class="hero-inner">
+          <div id="hero-live-wrap">
+            <div class="hero-top">
+              <div class="hero-figure"><span class="num" id="v-solar">–</span></div>
+              <div class="hero-sub-mode" id="hero-sub-mode">producing now</div>
+            </div>
+            <div class="hero-sofar">
+              <div class="val" id="hero-sub-today"></div>
+              <div class="vs" id="hero-sub-yesterday"></div>
+            </div>
+          </div>
+          <div class="hero-sentences" id="hero-sentences" style="display:none"></div>
+          <div class="hero-right">
+            <div class="cap-label" id="hero-cap"></div>
+            <div class="arc-wrap" id="arc-wrap">
+              <svg id="arc-svg" viewBox="0 0 1000 400" role="img" tabindex="0" aria-label="Today's production curve, sunrise to sunset">
+                <defs>
+                  <linearGradient id="arc-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/>
+                    <stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
+                  </linearGradient>
+                </defs>
+                <line id="cap-line" x1="0" y1="20" x2="1000" y2="20" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
+                <line id="horizon-line" x1="0" y1="340" x2="1000" y2="340" stroke="var(--mist)" stroke-width="1.5"/>
+                <path id="ghost-path" fill="none" stroke="var(--ghost)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 9"></path>
+                <text id="ghost-label" class="ghost-label" x="0" y="0" text-anchor="middle">yesterday</text>
+                <path id="arc-fill-path" fill="url(#arc-fill)" stroke="none"></path>
+                <path id="arc-line-path" fill="none" stroke="var(--leaf)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <circle id="now-glow" class="now-glow" r="10" fill="var(--leaf)" opacity="0.5"></circle>
+                <circle id="now-dot" r="7" fill="var(--leaf)" stroke="var(--paper)" stroke-width="2.5"></circle>
+              </svg>
+              <div class="arc-tooltip" id="arc-tooltip"></div>
+            </div>
+            <div class="sun-row">
+              <div class="stack sunrise"><span class="t" id="sunrise-label">–</span><span class="w">sunrise</span></div>
+              <div class="stack now" id="now-label-wrap"><span class="t" id="now-label">–</span><span class="w">now</span></div>
+              <div class="stack sunset"><span class="t" id="sunset-label">–</span><span class="w">sunset</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="visually-hidden" aria-live="polite" id="live-summary"></div>
+
+      <div class="section-row">
+        <div><h2 class="section-head">Today</h2><div class="section-note" id="today-note"></div></div>
+        <div class="ledger" id="ledger"></div>
+      </div>
+
+      <div class="section-row" id="month-rail-anchor">
+        <div class="month-rail">
+          <h2 class="section-head" id="month-head">September</h2>
+          <div class="month-nav">
+            <button class="icon-btn" id="month-prev" aria-label="Previous month"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="month-next" aria-label="Next month"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <div class="month-body" id="month-body">
+          <div>
+            <div class="weekdays"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="cal-grid" id="cal-grid" aria-label="Daily production. Choose a day to see its curve."></div>
+          </div>
+          <div class="stats-col" id="month-stats"></div>
+        </div>
+      </div>
+
+      <div class="section-row">
+        <h2 class="section-head" id="year-head">2026</h2>
+        <div class="year-body">
+          <div class="year-chart">
+            <div class="year-bars" id="year-bars"></div>
+            <div class="year-baseline"></div>
+            <div class="year-labels" id="year-labels"></div>
+          </div>
+          <div class="stats-col" id="year-stats"></div>
+        </div>
+      </div>
+
+      <div class="section-row">
+        <h2 class="section-head">Your system</h2>
+        <div class="sys-body" id="sys-body"></div>
+      </div>
+      <div class="tooltip" id="cal-tooltip"></div>
+      <dialog class="day-dialog" id="day-dialog" aria-labelledby="day-title">
+        <div class="day-card">
+          <div class="day-top">
+            <h2 id="day-title">–</h2>
+            <button class="icon-btn" id="day-prev" aria-label="Previous day"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="day-next" aria-label="Next day"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="day-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="day-stats" id="day-stats"></div>
+          <div class="day-chart" id="day-chart">
+            <svg id="day-svg" role="img" aria-label="Production curve for the chosen day"></svg>
+            <div class="day-tip" id="day-tip"></div>
+            <div class="msg" id="day-msg" style="display:none"></div>
+          </div>
+        </div>
+      </dialog>
+    </main>
+
+    <div class="center-panel" id="unconfigured-view" style="display:none">
+      <div class="center-card">
+        <h2>Not set up yet</h2>
+        <p>WAAREE sign-in details are added as Cloudflare secrets, not here.</p>
+        <code>cf-worker/scripts/set-secrets.sh</code>
+        <button id="reload-btn">Reload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const fmtIN = (d) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function fmtPower(w) {
+  w = Math.max(0, w || 0);
+  const kw = w / 1000;
+  if (w < 30) return { text: '0', unit: 'kW' };
+  if (kw < 10) return { text: fmtIN(2).format(kw), unit: 'kW' };
+  if (kw < 100) return { text: fmtIN(1).format(kw), unit: 'kW' };
+  return { text: fmtIN(0).format(kw), unit: 'kW' };
+}
+function fmtEnergy(wh) {
+  // Design rule (confirmed against v3-desktop.png): under 100 kWh keeps one
+  // decimal ("18.9"), 100 kWh and above rounds to a whole number ("335",
+  // "968") — not the finer-grained "334.5"/"968.0" a naive <1000 bucket
+  // would produce.
+  wh = Math.max(0, wh || 0);
+  const kwh = wh / 1000;
+  if (kwh < 100) return { text: fmtIN(1).format(kwh), unit: 'kWh' };
+  if (kwh < 10000) return { text: fmtIN(0).format(kwh), unit: 'kWh' };
+  return { text: fmtIN(1).format(kwh / 1000), unit: 'MWh' };
+}
+function fmtCurrency(v) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v || 0);
+}
+// For a per-unit tariff like ₹4.5, the 0-decimal formatter above would round
+// to ₹5 — the ledger's "at ₹4.5 a unit" caption needs the fractional rupee.
+function fmtCurrencyPrecise(v) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v || 0);
+}
+function html(v) { return v.unit ? `${v.text}<span class="unit">${v.unit === '%' ? '' : ' '}${v.unit}</span>` : v.text; }
+function to12h(hm) {
+  if (!hm) return '–';
+  const [h, m] = hm.split(':').map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
+function hhmmToMin(hm) { const [h, m] = (hm || '0:0').split(':').map(Number); return h * 60 + m; }
+// The plant is always Asia/Kolkata regardless of the viewer's own timezone.
+// "now" is derived from the server's own clock (`state.server_now`, real
+// wall time live or a pinned WAAREE_DASH_NOW in mock mode) rather than the
+// browser's, so a fixture can pin the whole UI — day/night, the arc's
+// now-marker, "today" in the calendar — to one exact moment. The result is
+// read back with the UTC getters as a +5:30 shift, same trick `updated_at`
+// already relies on.
+function istNow() {
+  const base = (state && state.server_now) ? new Date(state.server_now).getTime() : Date.now();
+  return new Date(base + 330 * 60000);
+}
+function fmtDateLong(iso, withYear) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return withYear ? `${d} ${MONTH_FULL[m - 1]} ${y}` : `${d} ${MONTH_FULL[m - 1]}`;
+}
+
+let state = null;
+let lastGoodState = null;
+
+async function poll() {
+  let fresh;
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    if (!res.ok) throw new Error('http ' + res.status);
+    fresh = await res.json();
+  } catch (e) {
+    // Only a failed fetch means we can't reach the router/WAAREE.
+    if (lastGoodState) {
+      state = lastGoodState;
+      safeRender();
+      $('banner-api').classList.add('show');
+    }
+    return;
+  }
+  state = lastGoodState = fresh;
+  hideBanner('banner-api');
+  safeRender();
+  if (dayDate && dayDate === todayIso()) renderDay();
+}
+function safeRender() {
+  try { render(); } catch (e) { console.error('render failed', e); }
+}
+function hideBanner(id) { $(id).classList.remove('show'); }
+
+function relTime(sec) {
+  if (sec < 60) return `${Math.round(sec)} s ago`;
+  if (sec < 3600) return `${Math.round(sec / 60)} min ago`;
+  const d = new Date(Date.now() - sec * 1000);
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
+
+function render() {
+  if (!state) return;
+  if (state.status === 'unconfigured') {
+    $('main-content').style.display = 'none';
+    $('unconfigured-view').style.display = '';
+    $('status-line').style.display = 'none';
+    $('plant-name').textContent = 'Solar';
+    ['banner-auth', 'banner-api', 'banner-stale'].forEach(hideBanner);
+    return;
+  }
+  $('unconfigured-view').style.display = 'none';
+  $('main-content').style.display = '';
+  $('status-line').style.display = '';
+  $('plant-name').textContent = state.plant.name || 'Home';
+  document.title = `Solar — ${fmtPower(state.live.solar_w).text} kW`;
+
+  ['banner-auth', 'banner-api', 'banner-stale'].forEach(hideBanner);
+  const ageSec = (Date.now() - new Date(state.live.updated_at).getTime()) / 1000;
+  const isStale = state.status === 'stale' || (state.status === 'ok' && ageSec > 300);
+
+  if (state.status === 'auth_failed') $('banner-auth').classList.add('show');
+  else if (state.status === 'api_error') $('banner-api').classList.add('show');
+  else if (isStale) {
+    $('banner-stale').classList.add('show');
+    const t = new Date(state.live.updated_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+    $('stale-msg').textContent = `Can't reach WAAREE right now. Showing data from ${t}.`;
+  }
+
+  const dotEl = $('status-dot'), textEl = $('status-text');
+  if (isStale) { dotEl.className = 'dot hollow'; textEl.textContent = `Last update ${relTime(ageSec)}`; }
+  else { dotEl.className = 'dot'; textEl.textContent = `Online, updated ${relTime(ageSec)}`; }
+
+  $('hero').classList.toggle('stale', isStale);
+
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
+  const isNight = nowMin < sunriseMin || nowMin > sunsetMin;
+
+  renderHero(isNight);
+  renderLedger(isNight);
+  renderCalendar();
+  renderYear();
+  renderSystem(isNight);
+}
+
+function renderHero(isNight) {
+  const l = state.live;
+  $('sunrise-label').textContent = to12h(state.sun.sunrise);
+  $('sunset-label').textContent = to12h(state.sun.sunset);
+  const ist = istNow();
+  const nowHHMM = `${String(ist.getUTCHours()).padStart(2, '0')}:${String(ist.getUTCMinutes()).padStart(2, '0')}`;
+  $('now-label').textContent = to12h(nowHHMM);
+  $('now-label-wrap').style.visibility = isNight ? 'hidden' : '';
+
+  if (state.has_meter && l.home_w != null) {
+    $('hero-live-wrap').style.display = 'none';
+    $('hero-sentences').style.display = '';
+    const mode = (l.export_w || 0) >= 30 ? 'export' : ((l.import_w || 0) >= 30 ? 'import' : 'balanced');
+    let extra = mode === 'export' ? `<p class="s-grid">Sending ${fmtPower(l.export_w).text} kW to the grid</p>`
+      : mode === 'import' ? `<p class="s-grid">Taking ${fmtPower(l.import_w).text} kW from the grid</p>` : '';
+    $('hero-sentences').innerHTML = `<p class="s-solar">Making ${fmtPower(l.solar_w).text} kW</p><p>Using ${fmtPower(l.home_w).text} kW</p>${extra}`;
+  } else {
+    $('hero-live-wrap').style.display = 'contents';
+    $('hero-sentences').style.display = 'none';
+    if (isNight) {
+      $('v-solar').innerHTML = html(fmtPower(0));
+      $('hero-sub-mode').textContent = `Night. The panels start again around ${to12h(state.sun.sunrise)}.`;
+    } else {
+      $('v-solar').innerHTML = html(fmtPower(l.solar_w));
+      $('hero-sub-mode').textContent = 'producing now';
+    }
+    $('hero-sub-today').textContent = `${fmtIN(1).format((state.today.produced_wh || 0) / 1000)} kWh so far today`;
+    const vy = state.today.vs_yesterday_wh;
+    const vyEl = $('hero-sub-yesterday');
+    if (vy != null) {
+      const kwh = Math.abs(vy) / 1000;
+      // Confirmed against design/export/v3-desktop.html: the "vs yesterday"
+      // line under the hero figure is ink-soft (#5B6B80) regardless of
+      // ahead/behind — no green highlight here (that was true of an
+      // earlier assumption, not the actual design).
+      vyEl.textContent = kwh < 0.05 ? 'about the same as yesterday' :
+        (vy >= 0 ? `${fmtIN(1).format(kwh)} kWh ahead of yesterday` : `${fmtIN(1).format(kwh)} kWh behind yesterday`);
+    } else {
+      vyEl.textContent = '';
+    }
+    const capKw = (state.plant.capacity_w || 0) / 1000;
+    $('hero-cap').textContent = capKw ? `${fmtIN(1).format(capKw)} kW, the most your system can make` : '';
+  }
+
+  drawArc(isNight);
+
+  if (!window.__liveSummaryTimer || Date.now() - window.__liveSummaryTimer > 60000) {
+    window.__liveSummaryTimer = Date.now();
+    $('live-summary').textContent = `Producing ${fmtPower(state.live.solar_w).text} kilowatts. ${fmtIN(1).format((state.today.produced_wh||0)/1000)} kilowatt hours so far today.`;
+  }
+}
+
+// ---- Catmull-Rom -> cubic bezier ----
+function catmullRomPath(pts) {
+  if (pts.length === 0) return '';
+  if (pts.length === 1) return `M ${pts[0][0]},${pts[0][1]}`;
+  let d = `M ${pts[0][0]},${pts[0][1]} `;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += `C ${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]} `;
+  }
+  return d;
+}
+
+let arcGeom = null; // cached for tooltip lookups
+
+// The SVG's viewBox is kept in sync with arc-wrap's actual pixel box (via
+// ResizeObserver below) so 1 viewBox unit is always 1 CSS px in both axes.
+// Previously the viewBox was a fixed 1000x400 stretched with
+// preserveAspectRatio="none" over a container of a different aspect ratio,
+// which scaled x and y unevenly — squashing the "yesterday" label's glyphs
+// and turning the round now-marker into an ellipse.
+let ARC_W = 1000, ARC_H = 400;
+let lastIsNight = false;
+
+function syncArcViewbox() {
+  const el = $('arc-wrap');
+  const w = Math.max(1, Math.round(el.clientWidth));
+  const h = Math.max(1, Math.round(el.clientHeight));
+  if (w === ARC_W && h === ARC_H) return;
+  ARC_W = w; ARC_H = h;
+  $('arc-svg').setAttribute('viewBox', `0 0 ${ARC_W} ${ARC_H}`);
+  if (state) drawArc(lastIsNight);
+}
+
+function drawArc(isNight) {
+  lastIsNight = isNight;
+  const PAD_B = Math.max(56, ARC_H * 0.18), PAD_T = Math.max(16, ARC_H * 0.05);
+  const W = ARC_W, H = ARC_H;
+  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
+  const span = Math.max(1, sunsetMin - sunriseMin);
+  const capKw = (state.plant.capacity_w || 3500) / 1000;
+  const x = (min) => ((min - sunriseMin) / span) * W;
+  const y = (kw) => (H - PAD_B) - (Math.max(0, Math.min(kw, capKw)) / capKw) * (H - PAD_B - PAD_T);
+  $('horizon-line').setAttribute('y1', H - PAD_B); $('horizon-line').setAttribute('y2', H - PAD_B);
+  $('horizon-line').setAttribute('x2', W);
+  $('cap-line').setAttribute('y1', PAD_T); $('cap-line').setAttribute('y2', PAD_T);
+  // sun-row sits right under the horizon, wherever that lands — a single
+  // source of truth instead of separately hand-tuned per breakpoint.
+  document.querySelector('.sun-row').style.top = ((H - PAD_B) / H * 100) + '%';
+  $('cap-line').setAttribute('x2', W);
+
+  const series = (state.today.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes() + ist.getUTCSeconds() / 60;
+
+  // Night: draw TODAY's full sunrise-to-sunset arc (no now-marker, no
+  // ghost) instead of leaving it blank — a real account with 53 samples
+  // still has a whole day's curve worth showing after sunset.
+  let todayPts = isNight
+    ? series.filter(p => p[0] >= sunriseMin && p[0] <= sunsetMin)
+    : series.filter(p => p[0] >= sunriseMin && p[0] <= Math.min(nowMin, sunsetMin));
+  const pathPts = todayPts.map(p => [x(p[0]), y(p[1])]);
+  const linePath = catmullRomPath(pathPts);
+  $('arc-line-path').setAttribute('d', linePath);
+  if (pathPts.length) {
+    const fillPath = linePath + `L ${pathPts[pathPts.length - 1][0]},${y(0)} L ${pathPts[0][0]},${y(0)} Z`;
+    $('arc-fill-path').setAttribute('d', fillPath);
+  } else {
+    $('arc-fill-path').setAttribute('d', '');
+  }
+
+  // now marker: hidden at night, per design (states frame k6RMfF).
+  const nowDot = $('now-dot'), nowGlow = $('now-glow');
+  if (!isNight && pathPts.length) {
+    const last = pathPts[pathPts.length - 1];
+    nowDot.setAttribute('cx', last[0]); nowDot.setAttribute('cy', last[1]);
+    nowGlow.setAttribute('cx', last[0]); nowGlow.setAttribute('cy', last[1]);
+    nowDot.style.display = ''; nowGlow.style.display = '';
+  } else {
+    nowDot.style.display = 'none'; nowGlow.style.display = 'none';
+  }
+
+  // ghost: yesterday's whole sunrise-to-sunset curve, dotted, day and
+  // night, so today can always be read against it.
+  const yList = (state.yesterday.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  const ghostPts = yList.filter(p => p[0] >= sunriseMin && p[0] <= sunsetMin);
+  const ghostXY = ghostPts.map(p => [x(p[0]), y(p[1])]);
+  $('ghost-path').setAttribute('d', catmullRomPath(ghostXY));
+  const ghostLabel = $('ghost-label');
+  if (ghostXY.length) {
+    // Label the ghost where today's curve isn't: over the part still to
+    // come in the day, or at yesterday's peak once today's curve is done.
+    const ahead = isNight ? [] : ghostPts.map((p, i) => [p, ghostXY[i]]).filter(([p]) => p[0] > nowMin + 20);
+    let at;
+    if (ahead.length >= 3) at = ahead[Math.floor(ahead.length / 2)][1];
+    else at = ghostXY.reduce((a, b) => (b[1] < a[1] ? b : a));
+    ghostLabel.setAttribute('x', Math.min(W - 30, Math.max(30, at[0])));
+    ghostLabel.setAttribute('y', Math.max(12, at[1] - 10));
+    ghostLabel.style.display = '';
+  } else ghostLabel.style.display = 'none';
+
+  arcGeom = { x, y, sunriseMin, sunsetMin, capKw, series, yList };
+}
+
+function attachArcInteraction() {
+  const svg = $('arc-svg'), tip = $('arc-tooltip'), wrap = $('arc-wrap');
+  function show(clientX) {
+    if (!arcGeom || !arcGeom.series.length) return;
+    const rect = svg.getBoundingClientRect();
+    const relX = (clientX - rect.left) / rect.width;
+    const min = arcGeom.sunriseMin + relX * (arcGeom.sunsetMin - arcGeom.sunriseMin);
+    let best = arcGeom.series[0], bestD = Infinity;
+    for (const p of arcGeom.series) { const d = Math.abs(p[0] - min); if (d < bestD) { bestD = d; best = p; } }
+    let yBest = null, yD = Infinity;
+    for (const p of arcGeom.yList) { const d = Math.abs(p[0] - min); if (d < yD) { yD = d; yBest = p; } }
+    const hh = String(Math.floor(best[0] / 60)).padStart(2, '0'), mm = String(Math.round(best[0] % 60)).padStart(2, '0');
+    tip.innerHTML = `<b>${to12h(hh + ':' + mm)}</b><br>Today ${fmtIN(2).format(best[1])} kW${yBest ? '<br>Yesterday ' + fmtIN(2).format(yBest[1]) + ' kW' : ''}`;
+    tip.style.display = 'block';
+    const px = clientX - rect.left;
+    let left = px + 12;
+    if (left + 160 > wrap.clientWidth) left = px - 172;
+    tip.style.left = Math.max(0, left) + 'px';
+    tip.style.top = '4px';
+  }
+  svg.addEventListener('pointermove', (e) => show(e.clientX));
+  svg.addEventListener('pointerleave', () => tip.style.display = 'none');
+  svg.addEventListener('keydown', (e) => { if (e.key === 'Escape') tip.style.display = 'none'; });
+}
+
+function daylightLeftHours() {
+  const now = istNow();
+  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const sunsetMin = hhmmToMin(state.sun.sunset);
+  return (sunsetMin - nowMin) / 60;
+}
+
+function renderLedger(isNight) {
+  const t = state.today;
+  const now = istNow();
+  const mName = MONTH_FULL[(state.month.month || (now.getUTCMonth() + 1)) - 1];
+  $('today-note').textContent = `${WEEKDAY_FULL[now.getUTCDay()]} ${now.getUTCDate()} ${mName}`;
+  const cells = [];
+  cells.push({
+    figure: t.earned != null ? fmtCurrency(t.earned) : '–',
+    label: state.plant.price_per_kwh ? `earned today, at ${fmtCurrencyPrecise(state.plant.price_per_kwh)} a unit` : 'earned today',
+  });
+  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak, at ${to12h(t.peak_at)}` : 'peak' });
+  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday, whole day' });
+  // Design rule: "daylight left" only makes sense in the daytime — hidden
+  // entirely at night rather than showing a dash.
+  const left = daylightLeftHours();
+  if (!isNight && left > 0) {
+    const h = Math.floor(left), m = Math.round((left - h) * 60);
+    cells.push({ figure: `${h}:${String(m).padStart(2, '0')}<span class="unit"> hours</span>`, label: 'of daylight left' });
+  }
+  $('ledger').innerHTML = cells.map(c => `<div class="cell"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
+}
+// ---- month browsing ----
+// viewYm null = the current month, live from state; otherwise [y, m] of a
+// past month fetched from /api/month (finished months never change, so
+// they're cached for the life of the page).
+let viewYm = null;
+const monthCache = new Map();
+const monthFailed = new Set();
+const pad2 = (n) => String(n).padStart(2, '0');
+const ymKey = (y, m) => `${y}-${pad2(m)}`;
+function curYm() {
+  if (state.month.year) return [state.month.year, state.month.month];
+  const n = istNow(); return [n.getUTCFullYear(), n.getUTCMonth() + 1];
+}
+function installParts() {
+  const s = state.plant.install_date;
+  return s ? s.split('-').map(Number) : null;
+}
+function shiftYm([y, m], k) { const t = y * 12 + (m - 1) + k; return [Math.floor(t / 12), (t % 12) + 1]; }
+
+async function showMonth(y, m) {
+  const [cy, cm] = curYm();
+  viewYm = (y === cy && m === cm) ? null : [y, m];
+  const key = ymKey(y, m);
+  if (viewYm && !monthCache.has(key)) {
+    monthFailed.delete(key);
+    $('month-body').classList.add('loading');
+    safeRender();
+    try {
+      const r = await fetch('/api/month?ym=' + key);
+      if (!r.ok) throw new Error('http ' + r.status);
+      monthCache.set(key, await r.json());
+    } catch (e) {
+      monthFailed.add(key);
+    }
+    $('month-body').classList.remove('loading');
+  }
+  safeRender();
+}
+
+function renderCalendar() {
+  const now = istNow();
+  const [cy, cm] = curYm();
+  const [vy, vm] = viewYm || [cy, cm];
+  const isCurrent = !viewYm;
+  const key = ymKey(vy, vm);
+  const month = isCurrent ? state.month : monthCache.get(key);
+  const mName = MONTH_FULL[vm - 1];
+  $('month-head').textContent = vy === now.getUTCFullYear() ? mName : `${mName} ${vy}`;
+
+  const inst = installParts();
+  $('month-next').disabled = isCurrent;
+  $('month-prev').disabled = !!inst && vy * 12 + vm <= inst[0] * 12 + inst[1];
+
+  const grid = $('cal-grid');
+  const setGrid = (h) => { if (grid.__html !== h) { grid.__html = h; grid.innerHTML = h; attachTooltips(grid.querySelectorAll('[data-tip]')); } };
+  if (!month) {
+    if (monthFailed.has(key)) {
+      setGrid('');
+      $('month-stats').innerHTML = `<div class="month-error">Couldn't load ${mName}.<button id="month-retry">Try again</button></div>`;
+      $('month-retry').onclick = () => showMonth(vy, vm);
+    }
+    return; // still loading: keep the previous grid, dimmed
+  }
+  const days = month.days || [];
+  if (!days.length) { setGrid(''); $('month-stats').innerHTML = ''; return; }
+  const firstDow = (new Date(Date.UTC(vy, vm - 1, 1)).getUTCDay() + 6) % 7; // Mon=0
+  let cellsHtml = '';
+  for (let i = 0; i < firstDow; i++) cellsHtml += '<div></div>';
+  const maxWh = Math.max(1, ...days.map(d => d.produced_wh || 0));
+  const openDate = $('day-dialog').open ? dayDate : null;
+  for (const d of days) {
+    const isToday = isCurrent && d.day === now.getUTCDate();
+    if (d.not_installed) {
+      cellsHtml += `<div class="cal-day not-installed empty-mist"><div class="d">${d.day}</div></div>`;
+      continue;
+    }
+    if (d.produced_wh == null) {
+      cellsHtml += `<div class="cal-day empty-mist${isToday ? ' today' : ''}"><div class="d">${d.day}</div></div>`;
+      continue;
+    }
+    const date = `${vy}-${pad2(vm)}-${pad2(d.day)}`;
+    const t = d.produced_wh / maxWh;
+    const bg = mixColor(t);
+    const kwh = fmtIN(1).format(d.produced_wh / 1000);
+    const earn = state.plant.price_per_kwh ? fmtCurrency(d.produced_wh / 1000 * state.plant.price_per_kwh) : null;
+    const tip = `${MONTH_NAMES[vm-1]} ${d.day}: ${kwh} kWh${earn ? ', ' + earn : ''}`;
+    cellsHtml += `<div class="cal-day${isToday ? ' today' : ''}${date === openDate ? ' selected' : ''}" style="background:${bg}" data-date="${date}" data-tip="${tip}" role="button" tabindex="0" aria-label="${tip}. Show this day's curve."><div class="d">${d.day}</div><div class="v">${kwh}</div></div>`;
+  }
+  setGrid(cellsHtml);
+
+  const stats = [];
+  stats.push({ figure: html(fmtEnergy(month.total_wh || 0)), label: isCurrent ? 'this month so far' : `made in ${mName}` });
+  if (state.plant.price_per_kwh) {
+    stats.push({ figure: fmtCurrency((month.total_wh || 0) / 1000 * state.plant.price_per_kwh), label: isCurrent ? 'earned this month' : `earned in ${mName}` });
+  }
+  if (month.best_day) {
+    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day, ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
+  }
+  const statsHtml = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
+  if ($('month-stats').__html !== statsHtml) { $('month-stats').__html = statsHtml; $('month-stats').innerHTML = statsHtml; }
+}
+function mixColor(t) {
+  const lo = getComputedStyle(document.documentElement).getPropertyValue('--cal-lo').trim();
+  const hi = getComputedStyle(document.documentElement).getPropertyValue('--cal-hi').trim();
+  return `color-mix(in srgb, ${hi} ${Math.round(t*100)}%, ${lo})`;
+}
+
+function renderYear() {
+  const now = istNow();
+  $('year-head').textContent = String(state.year.year || now.getUTCFullYear());
+  const months = state.year.months || [];
+  const maxWh = Math.max(1, ...months.map(m => m.produced_wh || 0));
+  const curMonth = state.month.month || (now.getUTCMonth() + 1);
+  const anyNotInstalled = months.some(m => m.not_installed);
+  const [vy, vm] = viewYm || curYm();
+  const viewingMonth = (state.year.year === vy) ? vm : null;
+  const barsHtml = months.map(m => {
+    if (m.not_installed) return `<div class="year-col"><div class="year-bar dash"></div></div>`;
+    if (m.produced_wh == null) return `<div class="year-col"></div>`;
+    const h = Math.max(2, (m.produced_wh / maxWh) * 170);
+    const kwh = fmtIN(0).format(m.produced_wh / 1000);
+    const tip = `${MONTH_NAMES[m.month-1]} ${state.year.year}: ${kwh} kWh`;
+    return `<div class="year-col${m.month === viewingMonth ? ' viewing' : ''}" data-ym="${ymKey(state.year.year, m.month)}" role="button" tabindex="0" aria-label="${tip}. Show this month."><div class="val">${kwh}</div><div class="year-bar" style="height:${h}px" data-tip="${tip}"></div></div>`;
+  }).join('') + (anyNotInstalled ? `<div class="not-installed-note">Not installed yet</div>` : '');
+  const bars = $('year-bars');
+  if (bars.__html !== barsHtml) { bars.__html = barsHtml; bars.innerHTML = barsHtml; attachTooltips(bars.querySelectorAll('[data-tip]')); }
+  $('year-labels').innerHTML = months.map(m => `<span class="${m.month === viewingMonth ? 'viewing' : (m.month === curMonth ? 'current' : '')}">${MONTH_NAMES[m.month-1]}</span>`).join('');
+
+  const installDate = state.plant.install_date;
+  const stats = [];
+  stats.push({
+    figure: html(fmtEnergy(state.year.since_install_wh || 0)),
+    label: installDate ? `since the panels went up on ${fmtDateLong(installDate, false)}` : 'since install',
+  });
+  if (state.plant.price_per_kwh) {
+    stats.push({ figure: fmtCurrency((state.year.since_install_wh || 0) / 1000 * state.plant.price_per_kwh), label: 'earned so far' });
+  }
+  $('year-stats').innerHTML = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
+}
+
+function attachTooltips(nodes) {
+  const tip = $('cal-tooltip');
+  nodes.forEach(n => {
+    n.addEventListener('pointerenter', (e) => showTip(e, n));
+    n.addEventListener('focus', (e) => showTip(e, n));
+    n.addEventListener('pointerleave', () => tip.style.display = 'none');
+    n.addEventListener('blur', () => tip.style.display = 'none');
+  });
+  function showTip(e, n) {
+    tip.textContent = n.getAttribute('data-tip');
+    tip.style.display = 'block';
+    const r = n.getBoundingClientRect();
+    tip.style.left = (r.left + window.scrollX) + 'px';
+    tip.style.top = (r.top + window.scrollY - 34) + 'px';
+  }
+}
+
+// A generic device_type like "WAAREE" (the real account's raw value) reads
+// oddly as "Inverter WAAREE is online" — that's not a model name, it's the
+// brand. Phrase around it; a real model name (e.g. "H1-3.6-E") is used
+// as-is.
+function isGenericType(t) { return /^waaree$/i.test((t || '').trim()); }
+
+function renderSystem(isNight) {
+  const devs = state.devices || [];
+  const alarms = state.alarms || [];
+  let html = '';
+  if (devs.length) {
+    const d = devs[0];
+    const statusText = d.status === 1 ? 'online' : d.status === 2 ? 'in fault' : d.status === 3 ? 'offline' : 'in an unknown state';
+    let line;
+    if (d.status !== 1 && isNight) {
+      // The plant has no way to be "online" while the sun is down anyway —
+      // avoid alarming the owner with "offline" every night.
+      line = `Inverter is resting until sunrise.`;
+    } else if (isGenericType(d.device_type)) {
+      line = `Your WAAREE inverter is <span class="online">${statusText}</span>.`;
+    } else {
+      line = `Inverter ${esc(d.device_type)} is <span class="online">${statusText}</span>.`;
+    }
+    const alarmText = alarms.length
+      ? ` ${alarms.length} alarm${alarms.length > 1 ? 's' : ''} today: ${esc(alarms[0].content)}${alarms.length > 1 ? ', +' + (alarms.length-1) + ' more' : ''}`
+      : ' No alarms today.';
+    html += `<p class="${alarms.length ? 'alert-text' : ''}">${line}${alarmText}</p>`;
+
+    const facts = [];
+    const capKw = (state.plant.capacity_w || 0) / 1000;
+    if (capKw) facts.push(`${fmtIN(1).format(capKw)} kW system${state.plant.panel_kwp ? ` with ${fmtIN(0).format(state.plant.panel_kwp)} kWp of panels` : ''}`);
+    if (state.plant.install_date) facts.push(`installed ${fmtDateLong(state.plant.install_date, true)}`);
+    let factLine = facts.join(', ');
+    const snTail = (d.sn || '').slice(-6);
+    if (snTail) factLine += (factLine ? '. ' : '') + `Inverter serial ends in ${snTail}.`;
+    else if (factLine) factLine += '.';
+    if (factLine) html += `<p class="facts">${factLine}</p>`;
+  } else {
+    html += `<p>No inverter data yet.</p>`;
+  }
+  html += `<p class="refresh">Figures come from WAAREE and refresh about every 5 minutes.</p>`;
+  if (!state.has_meter) html += `<p class="meter-note">Add an energy meter to see home use and what you send to the grid.</p>`;
+  $('sys-body').innerHTML = html;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- day detail ----
+// Today is drawn straight from the polled state; any other day comes from
+// /api/day (finished days never change, so they're cached for the page).
+let dayDate = null;
+const dayCache = new Map();
+const dayFailed = new Set();
+function todayIso() { const n = istNow(); return `${n.getUTCFullYear()}-${pad2(n.getUTCMonth() + 1)}-${pad2(n.getUTCDate())}`; }
+function shiftDate(iso, k) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + k));
+  return `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`;
+}
+function dayData(iso) {
+  if (iso === todayIso()) {
+    const t = state.today;
+    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset };
+  }
+  return dayCache.get(iso);
+}
+
+async function openDay(iso) {
+  dayDate = iso;
+  $('cal-tooltip').style.display = 'none';
+  const dlg = $('day-dialog');
+  if (!dlg.open) dlg.showModal();
+  renderDay();
+  safeRender(); // moves the calendar's selected ring
+  if (!dayData(iso)) {
+    dayFailed.delete(iso);
+    try {
+      const r = await fetch('/api/day?date=' + iso);
+      if (!r.ok) throw new Error('http ' + r.status);
+      dayCache.set(iso, await r.json());
+    } catch (e) {
+      dayFailed.add(iso);
+    }
+    if (dayDate === iso) renderDay();
+  }
+}
+
+function renderDay() {
+  const iso = dayDate;
+  if (!iso) return;
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  const isToday = iso === todayIso();
+  const yearPart = y === istNow().getUTCFullYear() ? '' : ` ${y}`;
+  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${isToday ? 'Today, so far' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : 'Production through the day'}</span>`;
+  $('day-next').disabled = iso >= todayIso();
+  const inst = state.plant.install_date;
+  $('day-prev').disabled = !!inst && iso <= inst;
+
+  const data = dayData(iso);
+  const msg = $('day-msg'), svg = $('day-svg');
+  $('day-tip').style.display = 'none';
+  if (!data) {
+    $('day-stats').innerHTML = '';
+    svg.innerHTML = '';
+    msg.style.display = 'flex';
+    if (dayFailed.has(iso)) {
+      msg.innerHTML = `Couldn't load this day.<button id="day-retry">Try again</button>`;
+      $('day-retry').onclick = () => openDay(iso);
+    } else msg.textContent = 'Loading…';
+    return;
+  }
+
+  const price = state.plant.price_per_kwh;
+  const cells = [{ figure: html(fmtEnergy(data.produced_wh)), label: isToday ? 'made so far' : 'made' }];
+  if (price) cells.push({ figure: fmtCurrency(data.produced_wh / 1000 * price), label: 'earned' });
+  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak, at ${to12h(data.peak_at)}` : 'peak' });
+  $('day-stats').innerHTML = cells.map(c => `<div class="stat"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
+
+  const pts = (data.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  if (!pts.some(p => p[1] > 0)) {
+    svg.innerHTML = '';
+    msg.style.display = 'flex';
+    msg.textContent = data.series && data.series.length ? 'No production this day.' : 'No data for this day.';
+    return;
+  }
+  msg.style.display = 'none';
+  drawDay(data, pts);
+}
+
+let dayGeom = null;
+function drawDay(data, pts) {
+  const svg = $('day-svg'), box = $('day-chart');
+  const W = Math.max(1, box.clientWidth), H = Math.max(1, box.clientHeight);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const PAD_T = 18, PAD_B = 34, PAD_L = 0, PAD_R = 0;
+  // Frame the day by its sunrise/sunset, widened if the panels reported
+  // output outside it.
+  const lit = pts.filter(p => p[1] > 0);
+  const t0 = Math.min(hhmmToMin(data.sunrise), lit[0][0]);
+  const t1 = Math.max(hhmmToMin(data.sunset), lit[lit.length - 1][0]);
+  const capKw = (state.plant.capacity_w || 3500) / 1000;
+  const top = Math.max(capKw, ...pts.map(p => p[1]));
+  const x = (min) => PAD_L + ((min - t0) / Math.max(1, t1 - t0)) * (W - PAD_L - PAD_R);
+  const y = (kw) => (H - PAD_B) - (Math.max(0, kw) / top) * (H - PAD_B - PAD_T);
+  const inRange = pts.filter(p => p[0] >= t0 && p[0] <= t1);
+  const xy = inRange.map(p => [x(p[0]), y(p[1])]);
+  const line = catmullRomPath(xy);
+  const fill = xy.length ? line + `L ${xy[xy.length - 1][0]},${y(0)} L ${xy[0][0]},${y(0)} Z` : '';
+  let peak = inRange[0];
+  for (const p of inRange) if (p[1] > peak[1]) peak = p;
+  const noon = 12 * 60;
+  const ticks = [
+    { m: hhmmToMin(data.sunrise), label: to12h(data.sunrise), anchor: 'start' },
+    { m: noon, label: '12 pm', anchor: 'middle' },
+    { m: hhmmToMin(data.sunset), label: to12h(data.sunset), anchor: 'end' },
+  ];
+  svg.innerHTML = `
+    <defs><linearGradient id="day-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/><stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
+    </linearGradient></defs>
+    <line x1="0" x2="${W}" y1="${y(capKw)}" y2="${y(capKw)}" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
+    <text class="axis" x="0" y="${y(capKw) - 6}">${fmtIN(1).format(capKw)} kW</text>
+    <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mist)" stroke-width="1.5"/>
+    ${ticks.map(t => `<text class="axis" x="${Math.min(W, Math.max(0, x(t.m)))}" y="${H - 10}" text-anchor="${t.anchor}">${t.label}</text>`).join('')}
+    <path d="${fill}" fill="url(#day-fill)"/>
+    <path d="${line}" fill="none" stroke="var(--leaf)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${x(peak[0])}" cy="${y(peak[1])}" r="5" fill="var(--leaf)" stroke="var(--paper)" stroke-width="2"/>
+    <line id="day-guide" x1="0" x2="0" y1="${PAD_T}" y2="${y(0)}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3 4" style="display:none"/>
+    <circle id="day-hover" r="5" fill="var(--paper)" stroke="var(--leaf-deep)" stroke-width="2" style="display:none"/>`;
+  dayGeom = { x, y, t0, t1, pts: inRange, W };
+}
+
+function dayPointer(e) {
+  if (!dayGeom || !dayGeom.pts.length) return;
+  const svg = $('day-svg'), tip = $('day-tip');
+  const rect = svg.getBoundingClientRect();
+  const min = dayGeom.t0 + ((e.clientX - rect.left) / rect.width) * (dayGeom.t1 - dayGeom.t0);
+  let best = dayGeom.pts[0];
+  for (const p of dayGeom.pts) if (Math.abs(p[0] - min) < Math.abs(best[0] - min)) best = p;
+  const px = dayGeom.x(best[0]), py = dayGeom.y(best[1]);
+  const guide = $('day-guide'), dot = $('day-hover');
+  guide.setAttribute('x1', px); guide.setAttribute('x2', px); guide.style.display = '';
+  dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.style.display = '';
+  const hm = `${pad2(Math.floor(best[0] / 60))}:${pad2(Math.round(best[0] % 60))}`;
+  tip.innerHTML = `<b>${to12h(hm)}</b> · ${fmtIN(2).format(best[1])} kW`;
+  tip.style.display = 'block';
+  const w = tip.offsetWidth;
+  tip.style.left = Math.max(0, Math.min(rect.width - w, px - w / 2)) + 'px';
+}
+function dayPointerEnd() {
+  $('day-tip').style.display = 'none';
+  const g = $('day-guide'), d = $('day-hover');
+  if (g) g.style.display = 'none';
+  if (d) d.style.display = 'none';
+}
+
+function wireHistory() {
+  $('month-prev').addEventListener('click', () => showMonth(...shiftYm(viewYm || curYm(), -1)));
+  $('month-next').addEventListener('click', () => showMonth(...shiftYm(viewYm || curYm(), 1)));
+  const onActivate = (el, fn) => {
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
+  };
+  onActivate($('cal-grid'), (e) => { const c = e.target.closest('[data-date]'); if (c) openDay(c.dataset.date); });
+  onActivate($('year-bars'), (e) => {
+    const c = e.target.closest('[data-ym]');
+    if (!c) return;
+    const [y, m] = c.dataset.ym.split('-').map(Number);
+    showMonth(y, m);
+    $('month-rail-anchor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const dlg = $('day-dialog');
+  $('day-close').addEventListener('click', () => dlg.close());
+  $('day-prev').addEventListener('click', () => openDay(shiftDate(dayDate, -1)));
+  $('day-next').addEventListener('click', () => openDay(shiftDate(dayDate, 1)));
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && !$('day-prev').disabled) openDay(shiftDate(dayDate, -1));
+    if (e.key === 'ArrowRight' && !$('day-next').disabled) openDay(shiftDate(dayDate, 1));
+  });
+  dlg.addEventListener('close', () => { dayDate = null; safeRender(); });
+  const svg = $('day-svg');
+  svg.addEventListener('pointermove', dayPointer);
+  svg.addEventListener('pointerdown', dayPointer);
+  svg.addEventListener('pointerleave', dayPointerEnd);
+  if (window.ResizeObserver) new ResizeObserver(debounce(() => { if (dayDate) renderDay(); }, 50)).observe($('day-chart'));
+}
+
+window.addEventListener('resize', debounce(() => { if (state) safeRender(); }, 150));
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+$('reload-btn').addEventListener('click', () => location.reload());
+$('retry-api').addEventListener('click', poll);
+$('retry-stale').addEventListener('click', poll);
+attachArcInteraction();
+wireHistory();
+if (window.ResizeObserver) {
+  new ResizeObserver(debounce(syncArcViewbox, 50)).observe($('arc-wrap'));
+} else {
+  window.addEventListener('resize', debounce(syncArcViewbox, 150));
+}
+
+let pollTimer = null;
+function startPolling() { if (pollTimer) return; poll(); pollTimer = setInterval(poll, 5000); }
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopPolling(); else startPolling(); });
+// Always load once (a tab opened in the background still has data when
+// fronted); only the repeating poll is tied to visibility.
+if (document.hidden) poll(); else startPolling();
+setInterval(() => { if (state) safeRender(); }, 1000);
+
+// PWA: service workers need HTTPS or localhost.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+})();
+</script>
+</body>
+</html>
