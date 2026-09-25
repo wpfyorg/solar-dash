@@ -1,33 +1,31 @@
 # solar-dash
 
-A clean, fast, self-hosted dashboard for **WAAREE PV Hub** solar accounts —
-and, since WAAREE is a white-labelled reseller of it, any account on the
-underlying **FoxESS Cloud** API. It replaces the official app's charts with a
-single page: live production, today's curve against yesterday's, a
-browsable calendar and year of history, and PWA install support.
+A simple, self-hosted dashboard for **WAAREE PV Hub** solar accounts. WAAREE
+uses the **FoxESS Cloud** API, so the dashboard should also work with other
+FoxESS-branded accounts. It brings live production, daily comparisons, a
+calendar, and a year of history together on one page. You can also install it
+on your phone as a PWA.
 
-It's a Cloudflare Worker: no server to run, a free-tier deployment, and a
-password gate so it's safe to leave on the public internet.
+It runs as a Cloudflare Worker, so there's no server to maintain. A password
+protects the dashboard, and a single-plant setup fits within Cloudflare's free
+tier.
 
 ![The hero card: live production, today's curve against yesterday's dotted ghost](docs/screenshot.png)
 
 ## Why this exists
 
-The official WAAREE app is slow, ad-hoc, and doesn't make it easy to just
-glance at what your panels are doing right now, or scroll back through past
-days. This dashboard talks to the same backend API the app uses and presents
-it as one legible page instead.
+I built this because the WAAREE app made it harder than it should be to check
+current production or look back at earlier days. This dashboard uses the same
+API and puts that information on one page.
 
-**What it can show:** solar production — live, today's curve, yesterday's
-for comparison, any past day, a calendar month, and a year of totals —
-plus your inverter's status and today's alarms.
+You can see live production, today's curve alongside yesterday's, any past
+day, monthly and yearly totals, inverter status, and today's alarms.
 
-**What it can't show:** home usage, grid import/export, or battery state —
-*if* your installation has no energy meter. WAAREE's API only reports these
-when a meter is present; without one, `loadsPower` and
-`gridConsumptionPower` are always zero. The dashboard detects this
-automatically (`has_meter` in the API) and hides those figures rather than
-show zeroes. If your installation *does* have a meter, it'll show them.
+Home usage, grid import/export, and battery state depend on your installation
+having an energy meter. WAAREE's API reports these values only when a meter is
+present; without one, `loadsPower` and `gridConsumptionPower` are always zero.
+The dashboard checks `has_meter` and hides the figures when there is no meter.
+If your installation has one, the figures appear as usual.
 
 ## How it works
 
@@ -39,18 +37,18 @@ Browser ──▶ Worker (password gate) ──▶ /api/state ──┘
                     └─▶ static UI (HTML/CSS/JS, no framework, no build step)
 ```
 
-- A scheduled Worker trigger polls WAAREE every 5 minutes and writes the
-  result to Workers KV.
-- `GET /api/state` serves that cached state to the browser — fast, and it
-  never blocks a page load on a live WAAREE round trip.
+- A scheduled Worker polls WAAREE every 5 minutes and saves the result in
+  Workers KV.
+- `GET /api/state` returns the cached state, so loading the page doesn't have
+  to wait for a live request to WAAREE.
 - `GET /api/day` and `GET /api/month` fetch a specific past day or month on
-  demand (for the calendar), reusing the same session token, and cache
-  finished (unchanging) days/months in KV so they never ask WAAREE twice.
-- A simple password gate (`/login`) sits in front of everything — an
-  HMAC-signed session cookie, rate-limited login attempts — since this is
-  meant to be reachable from anywhere, not just your home network.
-- The UI is one static page: no build step, no framework, a small embedded
-  font subset. It installs as a PWA (add to home screen) on phones.
+  demand for the calendar. They reuse the session token and cache completed
+  days and months in KV, avoiding repeat requests to WAAREE.
+- A password protects the app at `/login`. Sessions use an HMAC-signed cookie,
+  and login attempts are rate-limited so the dashboard can be accessed safely
+  outside your home network.
+- The interface is a static page with no framework or build step. It includes
+  a small embedded font subset and can be installed on a phone as a PWA.
 
 ## Requirements
 
@@ -60,12 +58,11 @@ Browser ──▶ Worker (password gate) ──▶ /api/state ──┘
   see [Costs](#costs) below).
 - Node.js 20+ and `npm`.
 
-**Region assumption:** WAAREE is India-only, so this dashboard hardcodes
-`Asia/Kolkata` (UTC+5:30) for "today"/"this month" boundaries and formats
-currency as INR. If you're adapting this for a different FoxESS-white-label
-brand outside India, you'll need to generalize `TZ_OFFSET_MIN` handling in
-`src/mapping.ts` (some of it is still a literal `330`) and the `en-IN`/`INR`
-formatting in `web/index.html`.
+**Region:** WAAREE is available in India, and the dashboard uses `Asia/Kolkata`
+(UTC+5:30) to define "today" and "this month." Currency is shown in INR. To
+adapt it for a FoxESS-branded service elsewhere, update the `TZ_OFFSET_MIN`
+handling in `src/mapping.ts` (some values are still the literal `330`) and the
+`en-IN`/`INR` formatting in `web/index.html`.
 
 ## Setup
 
@@ -97,10 +94,10 @@ be wrong for you.
 
 ### Custom domain (optional)
 
-By default you'll get `https://solar-dash.<your-subdomain>.workers.dev`.
-To use your own domain instead, its DNS zone needs to be on the same
-Cloudflare account you deployed with — then uncomment the `routes` block in
-`wrangler.jsonc` with your domain and redeploy.
+By default, the dashboard is available at
+`https://solar-dash.<your-subdomain>.workers.dev`. To use your own domain, its
+DNS zone must be on the same Cloudflare account. Add your domain in the
+`routes` block in `wrangler.jsonc`, then redeploy.
 
 ### Local development
 
@@ -109,9 +106,9 @@ cp .dev.vars.example .dev.vars   # fill in your own values, or leave MOCK=1
 npm run dev
 ```
 
-Set `MOCK=1` in `.dev.vars` to run entirely against bundled fixture data —
-no real WAAREE account needed. `MOCK_SCENARIO` picks a fixture (`design`,
-`night`); `MOCK_NOW=YYYY-MM-DDTHH:MM` pins the simulated time.
+Set `MOCK=1` in `.dev.vars` to use the bundled sample data without a WAAREE
+account. Choose a fixture with `MOCK_SCENARIO` (`design` or `night`), and set
+`MOCK_NOW=YYYY-MM-DDTHH:MM` to control the simulated time.
 
 ## Project layout
 
@@ -134,8 +131,8 @@ scripts/        One-time setup + secret management (run these yourself)
 
 ## Costs
 
-Everything here fits Cloudflare's free tier for a single-plant, personal-use
-deployment:
+For one plant and personal use, the dashboard fits within Cloudflare's free
+tier:
 
 - **Workers**: cron runs every 5 min (~8,640/month) plus page loads — well
   under the free tier's 100,000 requests/day.
@@ -144,18 +141,18 @@ deployment:
   under the free tier's 1,000 writes/day. Reads are unmetered on the free
   tier up to 100,000/day.
 
-If you deploy for multiple plants or many viewers, check your usage against
-current Cloudflare Workers/KV free-tier limits.
+For multiple plants or many viewers, check your usage against Cloudflare's
+current Workers and KV limits.
 
 ## Security notes
 
-- The dashboard sits behind a single shared password — treat it like any
-  other credential. There's no per-user login.
-- Rate limiting on `/login` blocks an IP after repeated failed attempts.
-- Only one active session (poller) can be logged into a given WAAREE
-  account at a time — each login invalidates the previous one. Don't run
-  `npm run dev` against your real WAAREE credentials while your deployed
-  Worker is also live, or they'll repeatedly log each other out.
+- Everyone who uses the dashboard shares one password; there are no
+  individual accounts. Keep the password private.
+- Repeated failed attempts at `/login` cause that IP to be rate-limited.
+- WAAREE allows one active session per account. A new login invalidates the
+  previous one, so running `npm run dev` with your real credentials while the
+  deployed Worker is active will cause the two sessions to log each other
+  out.
 
 ## License
 
