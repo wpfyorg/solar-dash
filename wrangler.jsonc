@@ -38,6 +38,20 @@
     "LAT": "28.6139",
     "LON": "77.2090",
     "TZ_OFFSET_MIN": "330",
+    // Your real hardware. WAAREE only stores a rounded plant size, so these
+    // override it when set (leave "" to use WAAREE's figures). The inverter
+    // size is the ceiling on the chart: panels bigger than the inverter
+    // get clipped to it on bright middays.
+    "PANEL_COUNT": "6",
+    "PANEL_W": "585",
+    "INVERTER_KW": "3.3",
+    // Panel orientation, for the weather forecast: TILT in degrees from
+    // flat, AZIMUTH 0 = facing south, -90 = east, 90 = west. Roughly your
+    // latitude is a common tilt in India. Set FORECAST to "0" to turn the
+    // forecast (Open-Meteo, free, no key) off.
+    "TILT": "20",
+    "AZIMUTH": "0",
+    "FORECAST": "1",
     "MOCK": "0",
     "MOCK_SCENARIO": "design"
   }

@@ -12,16 +12,20 @@
 //   history_at      - unix-seconds of the last successful history/devices/alarms refresh
 //   yesterday_at    - unix-seconds of the last successful yesterday-curve refresh
 //   polling_until   - stampede guard for on-demand refresh (unix-seconds)
+//   forecast_at     - unix-seconds of the last successful Open-Meteo fetch
 
 import { Client, ClientError } from "./client";
 import type { Env } from "./env";
-import { isMock } from "./env";
+import { isMock, plantOverrides } from "./env";
+import { buildForecast, fetchOpenMeteo, mockWeather, type PanelSetup } from "./forecast";
 import * as mapping from "./mapping";
 import { mockPoll, type MockScenario } from "./mock";
 import {
   defaultMonth,
   defaultYear,
   unconfiguredState,
+  type Forecast,
+  type Plant,
   type State,
 } from "./model";
 import * as sun from "./sun";
@@ -29,7 +33,8 @@ import * as sun from "./sun";
 const HISTORY_INTERVAL_SECONDS = 15 * 60; // "history... only if older than 15 min"
 const YESTERDAY_INTERVAL_SECONDS = 60 * 60; // refreshed hourly
 const STALE_AFTER_SECONDS = 5 * 60;
-const POLLING_LOCK_SECONDS = 60; // stampede guard TTL (KV's expirationTtl minimum is 60s)
+const POLLING_LOCK_SECONDS = 60;
+const FORECAST_INTERVAL_SECONDS = 60 * 60; // Open-Meteo updates hourly // stampede guard TTL (KV's expirationTtl minimum is 60s)
 
 async function getState(env: Env): Promise<State | null> {
   const raw = await env.SOLAR_KV.get("state");
@@ -102,6 +107,8 @@ export async function runPoll(env: Env, nowOverrideParam?: number | null): Promi
       : await livePoll(env, doHistory, doYesterday, prevHomeW);
 
     const merged = mergeUpdate(prevState, newState, doHistory, doYesterday);
+    applyPlantOverrides(merged.plant, env);
+    merged.forecast = await refreshForecast(env, merged, prevState?.forecast ?? null, now);
     recomputeStaleness(merged);
     await putState(env, merged);
 
@@ -155,6 +162,77 @@ function mergeUpdate(prev: State | null, next: State, doHistory: boolean, doYest
     merged.today.vs_yesterday_wh = merged.today.vs_yesterday_wh ?? prev.today.vs_yesterday_wh;
   }
   return merged;
+}
+
+/** WAAREE only stores a rounded plant size (e.g. "4 kWp", "3.5 kW"); the
+ * PANEL_COUNT/PANEL_W/INVERTER_KW vars give the real figures. */
+function applyPlantOverrides(plant: Plant, env: Env): void {
+  const o = plantOverrides(env);
+  if (o.panelCount && o.panelW) {
+    plant.panel_count = o.panelCount;
+    plant.panel_w = o.panelW;
+    plant.panel_kwp = (o.panelCount * o.panelW) / 1000;
+  }
+  if (o.inverterW) plant.capacity_w = o.inverterW;
+}
+
+/** Keeps the stored forecast for up to an hour (same day only), then
+ * refetches. A failed fetch keeps the previous forecast if it's still for
+ * today — a forecast an hour or two old beats none. */
+async function refreshForecast(env: Env, state: State, prev: Forecast | null, now: number): Promise<Forecast | null> {
+  if (env.FORECAST === "0") return null;
+  const serverNow = parseRfc3339(state.server_now) ?? now;
+  const [y, m, d] = mapping.civilToday(serverNow);
+  const todayIso = fmtDate([y, m, d]);
+  const tomorrowIso = fmtDate(mapping.civilFromDays(mapping.daysFromCivil(y, m, d) + 1));
+  const prevToday = prev && prev.today.date === todayIso ? prev : null;
+  const forecastAt = await getTimestamp(env, "forecast_at");
+  if (prevToday && now - forecastAt < FORECAST_INTERVAL_SECONDS) return prevToday;
+
+  const o = plantOverrides(env);
+  const setup: PanelSetup = {
+    lat: parseFloat(env.LAT) || sun.DEFAULT_LAT,
+    lon: parseFloat(env.LON) || sun.DEFAULT_LON,
+    tilt: o.tilt,
+    azimuth: o.azimuth,
+    kwp: state.plant.panel_kwp ?? state.plant.capacity_w / 1000,
+    inverterW: state.plant.capacity_w || 3500,
+  };
+  if (!(setup.kwp > 0)) return null;
+
+  // What the plant actually made on recent days, to calibrate against.
+  const actual: Record<string, number> = {};
+  for (const day of state.month.days) {
+    if (day.produced_wh != null) actual[fmtDate([state.month.year, state.month.month, day.day])] = day.produced_wh;
+  }
+  const [yy, ym, yd] = mapping.civilYesterday(y, m, d);
+  if (state.yesterday.produced_wh > 0) actual[fmtDate([yy, ym, yd])] = state.yesterday.produced_wh;
+
+  try {
+    let weather;
+    if (isMock(env)) {
+      const dates: string[] = [];
+      for (let k = -7; k <= 1; k++) dates.push(fmtDate(mapping.civilFromDays(mapping.daysFromCivil(y, m, d) + k)));
+      weather = mockWeather(setup, dates);
+    } else {
+      weather = await fetchOpenMeteo(setup);
+    }
+    const f = buildForecast(
+      setup,
+      weather,
+      todayIso,
+      tomorrowIso,
+      actual,
+      prev?.pr ?? null,
+      isMock(env) ? "mock" : "open-meteo",
+      mapping.nowIso()
+    );
+    await env.SOLAR_KV.put("forecast_at", String(now));
+    return f;
+  } catch (e) {
+    console.error("forecast failed:", e instanceof Error ? e.message : String(e));
+    return prevToday;
+  }
 }
 
 function recomputeStaleness(state: State): void {
@@ -238,6 +316,8 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
       price_per_kwh: (plantGet?.details?.price ?? 0) > 0 ? plantGet!.details!.price! : null,
       panel_kwp: (plantBean?.capacity ?? 0) > 0 ? plantBean!.capacity! : null,
       install_date: installDate ? fmtDate(installDate) : null,
+      panel_count: null,
+      panel_w: null,
     },
     live,
     sun: { sunrise, sunset },
@@ -257,6 +337,7 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
     year: defaultYear(),
     devices: [],
     alarms: [],
+    forecast: null,
   };
 
   if (state.plant.price_per_kwh !== null) {

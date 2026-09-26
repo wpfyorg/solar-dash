@@ -17,7 +17,7 @@ import {
 import type { Env } from "./env";
 import { BadRequest, dayDetail, monthDetail } from "./history";
 import { claimPollLock, runPoll } from "./poll";
-import { serializeState } from "./model";
+import { serializeState, unconfiguredState } from "./model";
 
 const PUBLIC_PATHS = new Set(["/login", "/manifest.webmanifest", "/sw.js", "/font.woff2"]);
 
@@ -153,30 +153,7 @@ async function handleApiState(env: Env, ctx: ExecutionContext): Promise<Response
     // immediately rather than blocking the request on a live network round
     // trip (poll.ts's runPoll writes state to KV; the next GET picks it up).
     ctx.waitUntil(triggerPollIfNeeded(env));
-    return jsonResponse({
-      status: "unconfigured",
-      server_now: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
-      has_meter: false,
-      plant: { name: "", capacity_w: 0, price_per_kwh: null, panel_kwp: null, install_date: null },
-      live: { solar_w: 0, home_w: null, export_w: null, import_w: null, updated_at: "" },
-      sun: { sunrise: "", sunset: "" },
-      today: {
-        series: [],
-        produced_wh: 0,
-        earned: null,
-        peak_w: 0,
-        peak_at: "",
-        vs_yesterday_wh: null,
-        home_wh: null,
-        exported_wh: null,
-        imported_wh: null,
-      },
-      yesterday: { series: [], produced_wh: 0 },
-      month: { month: 0, year: 0, days: [], total_wh: 0, best_day: null },
-      year: { year: 0, months: [], since_install_wh: 0 },
-      devices: [],
-      alarms: [],
-    });
+    return jsonResponse(unconfiguredState(new Date().toISOString().replace(/\.\d+Z$/, "Z")));
   }
 
   const updatedAt = Date.parse(state.live?.updated_at ?? "");

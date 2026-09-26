@@ -7,14 +7,53 @@ export type Status = "ok" | "stale" | "unconfigured" | "auth_failed" | "api_erro
 
 export interface Plant {
   name: string;
+  // The most the system can deliver: the inverter's AC limit.
   capacity_w: number;
   price_per_kwh: number | null;
   panel_kwp: number | null;
   install_date: string | null;
+  // From wrangler.jsonc (PANEL_COUNT/PANEL_W) when set — WAAREE only knows
+  // a rounded total. Null when not configured.
+  panel_count: number | null;
+  panel_w: number | null;
 }
 
 export function defaultPlant(): Plant {
-  return { name: "", capacity_w: 0, price_per_kwh: null, panel_kwp: null, install_date: null };
+  return {
+    name: "",
+    capacity_w: 0,
+    price_per_kwh: null,
+    panel_kwp: null,
+    install_date: null,
+    panel_count: null,
+    panel_w: null,
+  };
+}
+
+export interface ForecastPoint {
+  t: string; // "HH:MM", plant-local, 15-minute slot midpoint
+  expected_w: number;
+  clear_w: number;
+}
+
+export interface ForecastDay {
+  date: string;
+  expected_wh: number;
+  clear_wh: number;
+  weather_code: number | null; // WMO code
+  cloud_pct: number | null; // daylight average
+  series: ForecastPoint[]; // today only; empty for tomorrow
+}
+
+export interface Forecast {
+  source: "open-meteo" | "mock";
+  fetched_at: string;
+  // Performance ratio: actual output / what the irradiance alone predicts.
+  // Calibrated from the plant's own recent days when pr_days >= 3.
+  pr: number;
+  pr_days: number;
+  today: ForecastDay;
+  tomorrow: ForecastDay;
 }
 
 export interface Live {
@@ -149,6 +188,7 @@ export interface State {
   year: Year;
   devices: Device[];
   alarms: Alarm[];
+  forecast: Forecast | null;
 }
 
 export function unconfiguredState(nowIso: string): State {
@@ -165,6 +205,7 @@ export function unconfiguredState(nowIso: string): State {
     year: defaultYear(),
     devices: [],
     alarms: [],
+    forecast: null,
   };
 }
 
