@@ -94,6 +94,8 @@ export function findOutages(inp: OutageInput): Outage[] {
   // Samples stopped arriving, though WAAREE itself answered this poll.
   const lastT = s.length ? s[s.length - 1]![0] : null;
   if (isDay && lastT !== null && end - lastT > GAP_MIN) add(lastT, end, "no_data", true);
+  // Nothing at all from the inverter today (so far).
+  if (lastT === null) add(sunriseMin, end, "no_data", isDay);
 
   // A zero run straight into a silence is one event, named after how it ends.
   spans.sort((a, b) => a.from - b.from);

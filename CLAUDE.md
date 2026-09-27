@@ -51,6 +51,8 @@ Browser ─▶ index.ts (auth gate) ─▶ /api/state (reads KV; kicks a poll vi
   - The performance ratio is calibrated from recent actual daily totals (`calibratePr`, using `state.month.days` plus yesterday).
   - Clear-sky output comes from a local model (`clearSkyPoa`).
   - In mock mode, `mockWeather` stands in for Open-Meteo.
+- **Day totals come from WAAREE's energy counters, not the curve.** `pvPower` is DC power on the panel side, so integrating the curve reads a few percent high. Today uses the flow endpoint's `yieldToday`, and past days use the month report's `generation`, which is what the calendar shows. The curve only gives the day's shape and peak.
+- **Day detail (`/api/day`)** adds that day's weather from Open-Meteo's historical-forecast API, and outages found by running `findOutages` against that day's rebuilt irradiance. Finished days are cached under `day2:YYYY-MM-DD`. Alarms are merged in from `state.events` at request time.
 - **Mock mode uses the same code path as live.** `mock.ts` feeds the bundled JSON fixtures in `src/fixtures/{design,night}/` (shaped like WAAREE's raw responses, see `raw.ts`) through the same `mapping.ts` functions the live client uses.
 - **Everything assumes India.** The plant is IST (UTC+5:30), and the currency is INR (`en-IN` formatting in the UI).
   - The worker uses `TZ_OFFSET_HOURS` from `sun.ts`, but some places still hard-code `330`: `mapping.ts` `civilToday`, and `istNow()` in the UI. Dates are computed with manual civil-date math (`mapping.ts`), not `Date` local time.

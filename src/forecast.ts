@@ -14,8 +14,9 @@
 // fetched at most once an hour by the poller (see poll.ts) and stored in
 // `state.forecast`, so the browser never talks to it directly.
 
-import type { Forecast, ForecastDay, ForecastPoint, SkyPoint } from "./model";
-import { TZ_OFFSET_HOURS } from "./sun";
+import { plantOverrides, type Env } from "./env";
+import type { DayWeather, Forecast, ForecastDay, ForecastPoint, Plant, SkyPoint } from "./model";
+import { DEFAULT_LAT, DEFAULT_LON, TZ_OFFSET_HOURS } from "./sun";
 
 export const DEFAULT_PR = 0.8;
 const PR_MIN = 0.5;
@@ -32,6 +33,20 @@ export interface PanelSetup {
   inverterW: number; // AC limit
 }
 
+/** The panels as configured (wrangler vars) and as WAAREE reports them. */
+export function panelSetup(env: Env, plant: Plant): PanelSetup | null {
+  const o = plantOverrides(env);
+  const setup: PanelSetup = {
+    lat: parseFloat(env.LAT) || DEFAULT_LAT,
+    lon: parseFloat(env.LON) || DEFAULT_LON,
+    tilt: o.tilt,
+    azimuth: o.azimuth,
+    kwp: plant.panel_kwp ?? plant.capacity_w / 1000,
+    inverterW: plant.capacity_w || 3500,
+  };
+  return setup.kwp > 0 ? setup : null;
+}
+
 /** One 15-minute slot, `min` = minutes since local midnight of `date`. */
 export interface IrradianceSlot {
   date: string; // YYYY-MM-DD, plant-local
@@ -44,24 +59,27 @@ export interface IrradianceSlot {
 
 export interface WeatherInput {
   slots: IrradianceSlot[];
-  dailyCode: Record<string, number>; // YYYY-MM-DD -> WMO weather code
+  daily: Record<string, DayWeather>; // by YYYY-MM-DD
 }
 
 // --- Open-Meteo --------------------------------------------------------------
 
-export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
+/** The live forecast (last 7 days through tomorrow), or with `range` a span
+ * of past days from Open-Meteo's archive of its own forecasts, which goes
+ * back years and has the same variables. */
+export async function fetchOpenMeteo(setup: PanelSetup, range?: { start: string; end: string }): Promise<WeatherInput> {
   const q = new URLSearchParams({
     latitude: String(setup.lat),
     longitude: String(setup.lon),
     minutely_15: "global_tilted_irradiance,temperature_2m,cloud_cover,weather_code",
-    daily: "weather_code",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,cloud_cover_mean",
     tilt: String(setup.tilt),
     azimuth: String(setup.azimuth),
     timezone: "Asia/Kolkata",
-    past_days: "7",
-    forecast_days: "2",
+    ...(range ? { start_date: range.start, end_date: range.end } : { past_days: "7", forecast_days: "2" }),
   });
-  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`, {
+  const host = range ? "historical-forecast-api.open-meteo.com" : "api.open-meteo.com";
+  const res = await fetch(`https://${host}/v1/forecast?${q}`, {
     headers: { "User-Agent": "solar-dash (self-hosted dashboard)" },
   });
   if (!res.ok) throw new Error(`open-meteo http ${res.status}`);
@@ -73,7 +91,14 @@ export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
       cloud_cover?: (number | null)[];
       weather_code?: (number | null)[];
     };
-    daily?: { time?: string[]; weather_code?: (number | null)[] };
+    daily?: {
+      time?: string[];
+      weather_code?: (number | null)[];
+      temperature_2m_max?: (number | null)[];
+      temperature_2m_min?: (number | null)[];
+      precipitation_sum?: (number | null)[];
+      cloud_cover_mean?: (number | null)[];
+    };
   };
   const m = body.minutely_15 ?? {};
   const slots: IrradianceSlot[] = [];
@@ -94,12 +119,19 @@ export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
       code: m.weather_code?.[i] ?? null,
     });
   });
-  const dailyCode: Record<string, number> = {};
-  (body.daily?.time ?? []).forEach((d, i) => {
-    const c = body.daily?.weather_code?.[i];
-    if (c != null) dailyCode[d] = c;
+  const daily: Record<string, DayWeather> = {};
+  const dv = body.daily ?? {};
+  const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
+  (dv.time ?? []).forEach((d, i) => {
+    daily[d] = {
+      code: dv.weather_code?.[i] ?? null,
+      cloud_pct: dv.cloud_cover_mean?.[i] == null ? null : Math.round(dv.cloud_cover_mean[i]!),
+      precip_mm: r1(dv.precipitation_sum?.[i]),
+      temp_min: r1(dv.temperature_2m_min?.[i]),
+      temp_max: r1(dv.temperature_2m_max?.[i]),
+    };
   });
-  return { slots, dailyCode };
+  return { slots, daily };
 }
 
 // --- Clear-sky model ----------------------------------------------------------
@@ -200,11 +232,11 @@ function hhmm(min: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
 
-function buildDay(
+export function buildDay(
   setup: PanelSetup,
   date: string,
   slots: IrradianceSlot[],
-  code: number | null,
+  weather: DayWeather | null,
   pr: number,
   withSeries: boolean
 ): ForecastDay {
@@ -237,8 +269,11 @@ function buildDay(
     date,
     expected_wh: Math.round(expectedWh),
     clear_wh: Math.round(clearWh),
-    weather_code: code,
+    weather_code: weather?.code ?? null,
     cloud_pct: cloudN ? Math.round(cloudSum / cloudN) : null,
+    temp_min: weather?.temp_min ?? null,
+    temp_max: weather?.temp_max ?? null,
+    precip_mm: weather?.precip_mm ?? null,
     series,
     sky,
   };
@@ -262,8 +297,8 @@ export function buildForecast(
     fetched_at: fetchedAt,
     pr: Math.round(pr * 1000) / 1000,
     pr_days: cal?.days ?? 0,
-    today: buildDay(setup, todayIso, on(todayIso), weather.dailyCode[todayIso] ?? null, pr, true),
-    tomorrow: buildDay(setup, tomorrowIso, on(tomorrowIso), weather.dailyCode[tomorrowIso] ?? null, pr, false),
+    today: buildDay(setup, todayIso, on(todayIso), weather.daily[todayIso] ?? null, pr, true),
+    tomorrow: buildDay(setup, tomorrowIso, on(tomorrowIso), weather.daily[tomorrowIso] ?? null, pr, false),
   };
 }
 
@@ -274,11 +309,17 @@ export function buildForecast(
  * offline. */
 export function mockWeather(setup: PanelSetup, dates: string[]): WeatherInput {
   const slots: IrradianceSlot[] = [];
-  const dailyCode: Record<string, number> = {};
+  const daily: Record<string, DayWeather> = {};
   dates.forEach((date, di) => {
     const [y, m, d] = date.split("-").map(Number) as [number, number, number];
     const cloudiness = [0.35, 0.2, 0.55, 0.15, 0.3, 0.45, 0.25, 0.4, 0.1][di % 9]!;
-    dailyCode[date] = cloudiness > 0.4 ? 3 : cloudiness > 0.25 ? 2 : 1;
+    daily[date] = {
+      code: cloudiness > 0.4 ? 3 : cloudiness > 0.25 ? 2 : 1,
+      cloud_pct: Math.round(cloudiness * 100),
+      precip_mm: cloudiness > 0.4 ? 2.4 : 0,
+      temp_min: 25,
+      temp_max: 32,
+    };
     for (let q = 0; q < 96; q++) {
       const min = q * 15 + 7.5;
       const wobble = 0.5 + 0.5 * Math.sin(q * 0.9 + di * 1.7);
@@ -288,5 +329,5 @@ export function mockWeather(setup: PanelSetup, dates: string[]): WeatherInput {
       slots.push({ date, min, poa, tempC: 26 + 6 * Math.sin(((min - 420) / 720) * Math.PI), cloud, code });
     }
   });
-  return { slots, dailyCode };
+  return { slots, daily };
 }

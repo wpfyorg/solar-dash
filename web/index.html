@@ -279,6 +279,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 120px; }
 @media (max-width: 480px) { .ledger .cell { flex: 1 1 40%; } }
 .ledger .cell .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.ledger-icon { width: 26px; height: 26px; margin-right: 8px; vertical-align: -3px; }
 .ledger .cell .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
 /* nowrap only where a cell is actually wide enough for it (desktop, four
    ~190px+ cells) — at tablet widths the same four-cells-in-a-row layout
@@ -388,7 +389,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 /* day detail dialog */
 .day-dialog { border: none; padding: 0; background: transparent; color: var(--ink); max-width: none; max-height: none; width: min(760px, calc(100vw - 32px)); overflow: visible; }
 .day-dialog::backdrop { background: rgba(14, 23, 38, 0.45); }
-.day-card { background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
+.day-card { max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
 .day-top { display: flex; align-items: center; gap: 8px; }
 .day-top h2 { font-size: var(--fs-head); font-weight: 600; margin: 0; flex: 1 1 auto; min-width: 0; }
 .day-top .sub { display: block; font-size: var(--fs-small); color: var(--ink-soft); font-weight: 400; margin-top: 2px; }
@@ -400,6 +401,9 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .day-chart .axis { font-size: 12px; fill: var(--ink-soft); }
 .day-chart .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ink-soft); font-size: var(--fs-body); text-align: center; }
 .day-chart .msg button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.day-log { margin-top: 18px; }
+.day-log .log-row { grid-template-columns: 130px 20px 1fr; }
+@media (max-width: 480px) { .day-log .log-row { grid-template-columns: 20px 1fr; } }
 .day-tip { position: absolute; top: 0; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; }
 @media (max-width: 600px) {
   .day-dialog { width: 100vw; margin: auto 0 0; }
@@ -463,8 +467,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
           <div class="hero-right">
             <div class="chart-legend" aria-hidden="true"><span><i class="made"></i>made</span><span><i class="fc"></i>forecast</span><span><i class="clear"></i>clear sky</span></div>
             <div class="view-toggle" id="view-toggle" role="group" aria-label="Chart view" style="display:none">
-              <button type="button" data-view="curve" aria-pressed="true">Curve</button>
-              <button type="button" data-view="hourly" aria-pressed="false">Per hour</button>
+              <button type="button" data-view="curve" aria-pressed="true">Power</button>
+              <button type="button" data-view="hourly" aria-pressed="false">By hour</button>
             </div>
             <div class="arc-wrap" id="arc-wrap">
               <svg id="arc-svg" viewBox="0 0 1000 400" role="img" tabindex="0" aria-label="Today's output from sunrise to sunset, with the weather forecast and a clear-sky day for comparison">
@@ -536,7 +540,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
       </div>
 
       <div class="section-row">
-        <h2 class="section-head">Your system</h2>
+        <h2 class="section-head">System</h2>
         <div class="sys-body" id="sys-body"></div>
       </div>
       <div class="tooltip" id="cal-tooltip"></div>
@@ -554,13 +558,14 @@ button:active:not(:disabled) { transform: scale(0.97); }
             <div class="day-tip" id="day-tip"></div>
             <div class="msg" id="day-msg" style="display:none"></div>
           </div>
+          <div class="day-log" id="day-log"></div>
         </div>
       </dialog>
     </main>
 
     <div class="center-panel" id="unconfigured-view" style="display:none">
       <div class="center-card">
-        <h2>Almost there</h2>
+        <h2>Finish setup</h2>
         <p>Add your WAAREE sign-in as Cloudflare secrets by running this from the project folder, then reload.</p>
         <code>scripts/set-secrets.sh</code>
         <button id="reload-btn">Reload</button>
@@ -967,7 +972,7 @@ function renderHero(isNight) {
       $('hero-fc-label').textContent = 'expected tomorrow';
     } else {
       $('v-forecast').innerHTML = html(fmtEnergy(state.yesterday.produced_wh || 0));
-      $('hero-fc-label').textContent = 'yesterday, all day';
+      $('hero-fc-label').textContent = 'yesterday';
     }
   }
 
@@ -1245,13 +1250,14 @@ function renderLedger(isNight) {
     figure: t.earned != null ? fmtCurrency(t.earned) : '–',
     label: price ? `worth today, at ${fmtCurrencyPrecise(price)} a unit` : 'worth today',
   });
-  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak, at ${to12h(t.peak_at)}` : 'peak' });
+  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak at ${to12h(t.peak_at)}` : 'peak' });
   const tm = forecastTomorrow();
   if (tm) {
-    const w = weatherLabel(tm.weather_code);
-    cells.push({ figure: `~${html(fmtEnergy(tm.expected_wh))}`, label: `tomorrow${w ? ', ' + w : ''}` });
+    const w = dayWeatherPhrase({ code: tm.weather_code, cloud_pct: tm.cloud_pct, precip_mm: tm.precip_mm, temp_min: tm.temp_min, temp_max: tm.temp_max });
+    const icon = wxIcon(skyKind(tm.weather_code, tm.cloud_pct), false).replace('class="wx-icon', 'class="wx-icon ledger-icon');
+    cells.push({ figure: `${icon}~${html(fmtEnergy(tm.expected_wh))}`, label: w ? `tomorrow · ${w[0].toLowerCase()}${w.slice(1)}` : 'tomorrow' });
   }
-  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday, all day' });
+  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday' });
   $('ledger').innerHTML = cells.map(c => `<div class="cell"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
 }
 // ---- month browsing ----
@@ -1352,10 +1358,10 @@ function renderCalendar() {
   // Average over finished days only — today's partial total would drag it down.
   const doneDays = days.filter(d => d.produced_wh != null && !(isCurrent && d.day === now.getUTCDate()));
   if (doneDays.length >= 2) {
-    stats.push({ figure: html(fmtEnergy(doneDays.reduce((a, d) => a + d.produced_wh, 0) / doneDays.length)), label: 'on an average day' });
+    stats.push({ figure: html(fmtEnergy(doneDays.reduce((a, d) => a + d.produced_wh, 0) / doneDays.length)), label: 'average day' });
   }
   if (month.best_day) {
-    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day, ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
+    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day · ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
   }
   const statsHtml = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
   if ($('month-stats').__html !== statsHtml) { $('month-stats').__html = statsHtml; $('month-stats').innerHTML = statsHtml; }
@@ -1433,7 +1439,7 @@ function renderSystem(isNight) {
   if (!d) {
     out += `<p class="sys-status rest"><span class="dot"></span>Waiting for inverter details from WAAREE.</p>`;
   } else if (alarms.length) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. The log below has the details.</p>`;
+    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. See what happened below.</p>`;
   } else if (diag) {
     out += `<p class="sys-status alert"><span class="dot"></span>${esc(diag.title)}</p>`;
   } else if (d.status === 2) {
@@ -1491,7 +1497,7 @@ function renderSystem(isNight) {
 
   // Status, then the log, then the fixed details.
   out += renderLog();
-  out += `<h3 class="log-head">Details</h3>`;
+  out += `<h3 class="log-head">System details</h3>`;
   out += `<dl class="sys-grid">${rows.map(([k, v, more]) => `<div><dt>${k}</dt><dd>${v}${more ? `<span class="more">${more}</span>` : ''}</dd></div>`).join('')}</dl>`;
   out += `<p class="sys-foot">Figures come from WAAREE every 5 minutes.${state.has_meter ? '' : ' Add an energy meter to see what your home uses and what goes to the grid.'}</p>`;
   const body = $('sys-body');
@@ -1521,7 +1527,7 @@ function logLine(e) {
   const mins = hhmmToMin(e.to) - hhmmToMin(e.from);
   const lost = e.lost_wh != null && e.lost_wh >= 100 ? ` About ${fmtKwh(e.lost_wh)} missed.` : '';
   const title = e.kind === 'no_data' ? 'Inverter went quiet' : 'Power cut';
-  const why = e.kind === 'no_data' ? 'No readings reached WAAREE.' : 'The panels made nothing while the inverter stayed online.';
+  const why = e.kind === 'no_data' ? 'WAAREE stopped receiving readings.' : 'The inverter stayed online, but the panels produced nothing.';
   return {
     icon: e.kind === 'no_data' ? 'ic-clock' : 'ic-alert', cls: e.kind, title,
     at: e.ongoing ? `since ${from}` : `${from} to ${to12h(e.to)}`,
@@ -1530,9 +1536,9 @@ function logLine(e) {
 }
 function renderLog() {
   const events = state.events || [];
-  let out = '<div class="log"><h3 class="log-head">Log</h3>';
+  let out = '<div class="log"><h3 class="log-head">What happened</h3>';
   if (!events.length) {
-    return out + '<p class="log-empty">Nothing to report. Power cuts, times the inverter goes quiet, and inverter alarms will show up here.</p></div>';
+    return out + '<p class="log-empty">Nothing unusual so far. Power cuts and inverter problems will appear here.</p></div>';
   }
   const shown = events.slice(0, logShown);
   out += '<ol class="log-list">' + shown.map(e => {
@@ -1565,7 +1571,10 @@ function shiftDate(iso, k) {
 function dayData(iso) {
   if (iso === todayIso()) {
     const t = state.today;
-    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset };
+    const f = forecastToday();
+    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset,
+      weather: f ? { code: f.weather_code, cloud_pct: f.cloud_pct, precip_mm: f.precip_mm, temp_min: f.temp_min, temp_max: f.temp_max } : null,
+      events: (state.events || []).filter(e => e.date === iso) };
   }
   return dayCache.get(iso);
 }
@@ -1597,14 +1606,18 @@ function renderDay() {
   const wd = WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const isToday = iso === todayIso();
   const yearPart = y === istNow().getUTCFullYear() ? '' : ` ${y}`;
-  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${isToday ? 'Today, so far' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : 'The whole day'}</span>`;
+  const data = dayData(iso);
+  const when = isToday ? 'so far today' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : '';
+  const sky = data && data.weather ? dayWeatherPhrase(data.weather) : '';
+  const sub = cap1([when, sky].filter(Boolean).join('. '));
+  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${esc(sub)}</span>`;
   $('day-next').disabled = iso >= todayIso();
   const inst = state.plant.install_date;
   $('day-prev').disabled = !!inst && iso <= inst;
 
-  const data = dayData(iso);
   const msg = $('day-msg'), svg = $('day-svg');
   $('day-tip').style.display = 'none';
+  $('day-log').innerHTML = data ? dayLogHtml(data) : '';
   if (!data) {
     $('day-stats').innerHTML = '';
     svg.innerHTML = '';
@@ -1619,18 +1632,43 @@ function renderDay() {
   const price = state.plant.price_per_kwh;
   const cells = [{ figure: html(fmtEnergy(data.produced_wh)), label: isToday ? 'made so far' : 'made' }];
   if (price) cells.push({ figure: fmtCurrency(data.produced_wh / 1000 * price), label: 'worth' });
-  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak, at ${to12h(data.peak_at)}` : 'peak' });
+  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak at ${to12h(data.peak_at)}` : 'peak' });
+  const missed = (data.events || []).reduce((a, e) => a + (e.kind !== 'alarm' && e.lost_wh ? e.lost_wh : 0), 0);
+  if (missed >= 100) cells.push({ figure: html(fmtEnergy(missed)), label: 'missed to outages' });
   $('day-stats').innerHTML = cells.map(c => `<div class="stat"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
 
   const pts = (data.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
   if (!pts.some(p => p[1] > 0)) {
     svg.innerHTML = '';
     msg.style.display = 'flex';
-    msg.textContent = data.series && data.series.length ? 'The panels made nothing this day.' : 'WAAREE has no data for this day.';
+    msg.textContent = data.series && data.series.length ? 'No solar output was recorded that day.' : 'WAAREE has no data for that day.';
     return;
   }
   msg.style.display = 'none';
   drawDay(data, pts);
+}
+
+// "Mostly sunny with a little rain, 25° to 32°". Built from mean cloud and
+// rainfall rather than the WMO code, which is the day's worst moment: one
+// five-minute shower would otherwise make a sunny day read "showers".
+function dayWeatherPhrase(w) {
+  const c = w.cloud_pct;
+  let sky = c == null ? '' : c < 20 ? 'Sunny' : c < 40 ? 'Mostly sunny' : c < 65 ? 'Partly cloudy' : c < 85 ? 'Mostly cloudy' : 'Overcast';
+  const p = w.precip_mm;
+  const wet = w.code >= 95 ? 'thunderstorms' : p == null ? '' : p < 0.5 ? '' : p < 3 ? 'a little rain' : p < 10 ? 'some rain' : 'heavy rain';
+  if (!sky && wet) sky = cap1(wet); else if (wet) sky += ` with ${wet}`;
+  const temps = w.temp_min != null && w.temp_max != null ? `${Math.round(w.temp_min)}° to ${Math.round(w.temp_max)}°` : '';
+  return [sky, temps].filter(Boolean).join(', ');
+}
+function dayLogHtml(data) {
+  const events = data.events || [];
+  if (!events.length) return '';
+  return `<ol class="log-list">${events.map(e => {
+    const l = logLine(e);
+    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}"><div class="log-when"><span class="t">${l.at}</span></div>
+      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
+      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div></li>`;
+  }).join('')}</ol>`;
 }
 
 let dayGeom = null;
@@ -1664,8 +1702,10 @@ function drawDay(data, pts) {
     <defs><linearGradient id="day-fill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/><stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
     </linearGradient></defs>
-    <line x1="0" x2="${W}" y1="${y(capKw)}" y2="${y(capKw)}" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text class="axis" x="0" y="${y(capKw) - 6}">${fmtIN(1).format(capKw)} kW</text>
+    ${(data.events || []).filter(e => e.kind !== 'alarm' && e.to).map(e => {
+      const x0 = x(hhmmToMin(e.from)), w = Math.max(0, x(hhmmToMin(e.to)) - x0);
+      return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>`;
+    }).join('')}
     <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mist)" stroke-width="1.5"/>
     ${ticks.map(t => `<text class="axis" x="${Math.min(W, Math.max(0, x(t.m)))}" y="${H - 10}" text-anchor="${t.anchor}">${t.label}</text>`).join('')}
     <path d="${fill}" fill="url(#day-fill)"/>
