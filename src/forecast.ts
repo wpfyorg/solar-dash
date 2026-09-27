@@ -14,7 +14,7 @@
 // fetched at most once an hour by the poller (see poll.ts) and stored in
 // `state.forecast`, so the browser never talks to it directly.
 
-import type { Forecast, ForecastDay, ForecastPoint } from "./model";
+import type { Forecast, ForecastDay, ForecastPoint, SkyPoint } from "./model";
 import { TZ_OFFSET_HOURS } from "./sun";
 
 export const DEFAULT_PR = 0.8;
@@ -39,6 +39,7 @@ export interface IrradianceSlot {
   poa: number; // W/m² on the panel plane
   tempC: number;
   cloud: number; // %
+  code: number | null; // WMO weather code for this slot
 }
 
 export interface WeatherInput {
@@ -52,7 +53,7 @@ export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
   const q = new URLSearchParams({
     latitude: String(setup.lat),
     longitude: String(setup.lon),
-    minutely_15: "global_tilted_irradiance,temperature_2m,cloud_cover",
+    minutely_15: "global_tilted_irradiance,temperature_2m,cloud_cover,weather_code",
     daily: "weather_code",
     tilt: String(setup.tilt),
     azimuth: String(setup.azimuth),
@@ -70,6 +71,7 @@ export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
       global_tilted_irradiance?: (number | null)[];
       temperature_2m?: (number | null)[];
       cloud_cover?: (number | null)[];
+      weather_code?: (number | null)[];
     };
     daily?: { time?: string[]; weather_code?: (number | null)[] };
   };
@@ -89,6 +91,7 @@ export async function fetchOpenMeteo(setup: PanelSetup): Promise<WeatherInput> {
       poa: Math.max(0, m.global_tilted_irradiance?.[i] ?? 0),
       tempC: m.temperature_2m?.[i] ?? 25,
       cloud: m.cloud_cover?.[i] ?? 0,
+      code: m.weather_code?.[i] ?? null,
     });
   });
   const dailyCode: Record<string, number> = {};
@@ -207,6 +210,7 @@ function buildDay(
 ): ForecastDay {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const series: ForecastPoint[] = [];
+  const sky: SkyPoint[] = [];
   let expectedWh = 0;
   let clearWh = 0;
   let cloudSum = 0;
@@ -224,6 +228,10 @@ function buildDay(
     if (withSeries && clearW > 0) {
       series.push({ t: hhmm(s.min), expected_w: Math.round(expectedW), clear_w: Math.round(clearW) });
     }
+    // Hourly sky, day and night, for the hero's weather backdrop.
+    if (withSeries && Math.round(s.min + 7.5) % 60 === 0) {
+      sky.push({ t: hhmm(s.min), code: s.code, cloud: Math.round(s.cloud) });
+    }
   }
   return {
     date,
@@ -232,6 +240,7 @@ function buildDay(
     weather_code: code,
     cloud_pct: cloudN ? Math.round(cloudSum / cloudN) : null,
     series,
+    sky,
   };
 }
 
@@ -275,7 +284,8 @@ export function mockWeather(setup: PanelSetup, dates: string[]): WeatherInput {
       const wobble = 0.5 + 0.5 * Math.sin(q * 0.9 + di * 1.7);
       const cloud = Math.round(100 * Math.min(1, cloudiness * (0.6 + wobble)));
       const poa = clearSkyPoa(setup, y, m, d, min) * (1 - 0.75 * (cloud / 100));
-      slots.push({ date, min, poa, tempC: 26 + 6 * Math.sin(((min - 420) / 720) * Math.PI), cloud });
+      const code = cloud > 80 ? 3 : cloud > 45 ? 2 : cloud > 15 ? 1 : 0;
+      slots.push({ date, min, poa, tempC: 26 + 6 * Math.sin(((min - 420) / 720) * Math.PI), cloud, code });
     }
   });
   return { slots, dailyCode };

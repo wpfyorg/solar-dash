@@ -36,6 +36,13 @@ export interface ForecastPoint {
   clear_w: number;
 }
 
+/** Sky conditions for one hour, from Open-Meteo. */
+export interface SkyPoint {
+  t: string; // "HH:MM", slot midpoint
+  code: number | null; // WMO weather code
+  cloud: number; // %
+}
+
 export interface ForecastDay {
   date: string;
   expected_wh: number;
@@ -43,6 +50,7 @@ export interface ForecastDay {
   weather_code: number | null; // WMO code
   cloud_pct: number | null; // daylight average
   series: ForecastPoint[]; // today only; empty for tomorrow
+  sky: SkyPoint[]; // today only, hourly around the clock; empty for tomorrow
 }
 
 export interface Forecast {

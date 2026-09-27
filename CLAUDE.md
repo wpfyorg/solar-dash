@@ -23,7 +23,7 @@ npx vitest run -t "calibrates"              # tests matching a name
   - `MOCK_NOW=YYYY-MM-DDTHH:MM`, in plant-local IST. The `design` fixture's day data ends at 12:40.
   - You can also pass them on the command line, e.g. `npx wrangler dev --var MOCK:1 --var MOCK_NOW:2026-09-26T12:40`.
 - **Local state:** local KV lives in `.wrangler/state`. `/api/state` only re-polls when the stored state is more than 6 minutes old, and cron doesn't fire in dev. To see a different `MOCK_NOW` take effect, delete `.wrangler/state`.
-- **Screenshots:** `?theme=light|dark` forces a theme.
+- **Screenshots:** `?theme=light|dark` forces a theme. `?sky=clear|fair|cloudy|overcast|fog|drizzle|rain|storm` forces the hero's weather backdrop.
 - **One-time deploy setup (the user runs these, not agents):** `scripts/setup.sh` creates the KV namespace and patches its id into `wrangler.jsonc`. `scripts/set-secrets.sh` sets the secrets.
 
 ## Architecture
@@ -71,5 +71,8 @@ Browser ─▶ index.ts (auth gate) ─▶ /api/state (reads KV; kicks a poll vi
   - The SVG viewBox tracks its pixel size (`syncArcViewbox`), so one viewBox unit is one CSS pixel.
   - Curves use `smoothPath`, a monotone cubic that never overshoots the data. Don't reintroduce Catmull-Rom, which dipped below zero.
   - `chartView` switches between `curve` and `hourly` and is saved in `localStorage`, with every access wrapped in try/catch.
+- **Sky backdrop.** `#sky-fx` shows the current hour's weather from `forecast.today.sky` (hourly WMO code and cloud %). It is built once per sky kind (`renderSky`), uses CSS container units, and animates only transform/opacity. Reduced motion freezes it.
+- **Outages.** WAAREE has no grid-voltage data, so `findOutages` infers cuts. A daylight run of zero output means the inverter is up but the mains is down. A gap in samples means the inverter lost power or Wi-Fi. Either only counts when the forecast expected real output. `diagnose` turns an ongoing one into the hero note and the System headline. Past ones become chart bands and the Today note.
+- **Staleness.** Figures are stale after 11 minutes (`STALE_SEC` in the UI, `STALE_AFTER_SECONDS` in `poll.ts`), because the cron runs every 5 minutes and one late run is normal.
 - **Layout.** Breakpoints are 1099px (tablet), 600px and 480px (phone), and the hero uses different grid areas at each. Check phone width after any hero change.
 - **Copy style.** Plain, lowercase labels under figures, e.g. "worth today, at ₹4.5 a unit", "peak, at 1:11 pm". Money is "worth", not "earned", because without an energy meter there's no import/export data.

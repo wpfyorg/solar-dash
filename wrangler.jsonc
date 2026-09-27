@@ -49,7 +49,7 @@
     // flat, AZIMUTH 0 = facing south, -90 = east, 90 = west. Roughly your
     // latitude is a common tilt in India. Set FORECAST to "0" to turn the
     // forecast (Open-Meteo, free, no key) off.
-    "TILT": "20",
+    "TILT": "26",
     "AZIMUTH": "0",
     "FORECAST": "1",
     "MOCK": "0",

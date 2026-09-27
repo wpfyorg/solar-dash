@@ -32,9 +32,10 @@ import * as sun from "./sun";
 
 const HISTORY_INTERVAL_SECONDS = 15 * 60; // "history... only if older than 15 min"
 const YESTERDAY_INTERVAL_SECONDS = 60 * 60; // refreshed hourly
-const STALE_AFTER_SECONDS = 5 * 60;
-const POLLING_LOCK_SECONDS = 60;
-const FORECAST_INTERVAL_SECONDS = 60 * 60; // Open-Meteo updates hourly // stampede guard TTL (KV's expirationTtl minimum is 60s)
+// Cron runs every 5 min, so a single late run is normal; two missed runs is not.
+const STALE_AFTER_SECONDS = 11 * 60;
+const POLLING_LOCK_SECONDS = 60; // stampede guard TTL (KV's expirationTtl minimum is 60s)
+const FORECAST_INTERVAL_SECONDS = 60 * 60; // Open-Meteo updates hourly
 
 async function getState(env: Env): Promise<State | null> {
   const raw = await env.SOLAR_KV.get("state");

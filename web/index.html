@@ -38,6 +38,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
   --focus: var(--ink);
   --gap: 64px;
   --rail: 240px;
@@ -61,6 +62,7 @@
     --alert: #F08A80; --alert-soft: #3A1F24;
     --warn: #F2C46A; --warn-soft: #33291A;
     --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
   }
 }
 :root[data-theme="dark"] {
@@ -70,6 +72,7 @@
   --alert: #F08A80; --alert-soft: #3A1F24;
   --warn: #F2C46A; --warn-soft: #33291A;
   --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
 }
 :root[data-theme="light"] {
   --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
@@ -78,6 +81,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
@@ -95,6 +99,12 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
 .status-line { font-size: var(--fs-small); color: var(--ink-soft); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); display: inline-block; flex: none; }
 .dot.hollow { background: transparent; border: 1.5px solid var(--ink-soft); }
+/* A ring that breathes out from the status dot while figures are fresh. */
+.dot.live { box-shadow: 0 0 0 0 color-mix(in srgb, var(--leaf) 55%, transparent); animation: live-ring 2.6s ease-out infinite; }
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--leaf) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+button { transition: transform 0.12s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .dot.live { animation: none; } button:active:not(:disabled) { transform: none; } }
 
 /* banners */
 .banner { display: none; align-items: center; gap: 10px; border-radius: 8px; padding: 12px 16px; font-size: var(--fs-small); margin-bottom: 20px; }
@@ -116,9 +126,9 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
    breakpoint declaratively instead of via absolute-position hacks, which
    is what caused the mobile overlap bug (hero-sofar was absolutely
    positioned relative to a shrink-wrapped ancestor, not the card). */
-.hero { background: var(--paper); border-radius: 28px; position: relative; overflow: hidden; height: var(--hero-h); }
+.hero { background: var(--paper); border-radius: 28px; position: relative; overflow: hidden; isolation: isolate; }
 .hero-inner {
-  position: absolute; inset: 0;
+  position: relative; z-index: 1; min-height: var(--hero-h);
   display: grid;
   grid-template-columns: 300px 1fr;
   grid-template-rows: auto 1fr;
@@ -131,11 +141,10 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
    narrower desktop or a wider phone. The card's height is content-driven
    here rather than the fixed --hero-h desktop/phone use. */
 @media (max-width: 1099px) and (min-width: 601px) {
-  .hero { height: auto; }
-  .hero-inner { position: static; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-template-areas: "top sofar" "right right"; padding: 28px 32px; gap: 20px 24px; }
+  .hero-inner { min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-template-areas: "top sofar" "right right"; padding: 28px 32px; gap: 20px 24px; }
 }
 @media (max-width: 600px) {
-  .hero-inner { grid-template-columns: 1fr; grid-template-rows: auto auto auto; grid-template-areas: "top" "right" "sofar"; padding: 24px 20px; gap: 16px 0; }
+  .hero-inner { min-height: 0; grid-template-columns: 1fr; grid-template-rows: auto auto auto; grid-template-areas: "top" "right" "sofar"; padding: 24px 20px; gap: 16px 0; }
 }
 @media (max-width: 480px) { .hero-inner { padding: 20px 16px; } }
 /* #hero-live-wrap groups hero-top + hero-sofar only so JS can hide both
@@ -152,8 +161,20 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
 .hero-figure .num { font-size: var(--fs-live); font-weight: 600; letter-spacing: -0.02em; line-height: 0.92; }
 .hero-figure .unit { font-size: var(--fs-live-unit); font-weight: 500; color: var(--ink-soft); margin-left: 8px; }
 .hero-sub-mode { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 6px; }
+/* Why the panels aren't making anything, when that isn't just the weather. */
+.hero-note { display: none; gap: 10px; margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: var(--warn-soft); color: var(--warn); font-size: var(--fs-small); line-height: 1.4; max-width: 34ch; }
+.hero-note.show { display: flex; animation: note-in 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.hero-note svg { flex: none; margin-top: 1px; }
+.hero-note b { display: block; font-size: var(--fs-body); font-weight: 600; margin-bottom: 2px; }
+.hero-note span { color: color-mix(in srgb, var(--warn) 78%, var(--ink)); }
+@media (max-width: 1099px) { .hero-note { max-width: 46ch; } }
+@keyframes note-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.outage-band { fill: var(--warn); opacity: 0.1; }
+.outage-label { font-size: 11px; fill: var(--warn); font-weight: 600; }
+.note-warn { color: var(--warn); }
 .hero-sofar .val { font-size: 20px; font-weight: 600; }
 @media (max-width: 480px) { .hero-sofar .val { font-size: 17px; } }
+@media (max-width: 600px) { .hero-sofar { margin-top: 14px; } }
 .hero-sofar .vs { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 2px; }
 .hero-sofar .fc { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 2px; }
 .hero-sofar .fc b { color: var(--ink); font-weight: 600; }
@@ -215,6 +236,43 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
 .hour-fc { fill: none; stroke: var(--leaf); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
 .hour-actual { fill: var(--leaf); }
 .hour-actual.partial { opacity: 0.55; }
+
+/* Sky backdrop: the hero shows the weather outside, from Open-Meteo's
+   15-minute forecast for this hour. Soft shapes only, behind the content,
+   animating transform/opacity. Sizes use container units so drift and fall
+   distances follow the card. Reduced motion freezes everything in place. */
+.sky-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; container-type: size; }
+.sky-fx > * { position: absolute; }
+.fx-sun { right: -12cqw; top: -38cqh; width: min(70cqw, 640px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, var(--sun-glow), transparent 72%); animation: sun-breathe 9s ease-in-out infinite alternate; }
+.sky-fair .fx-sun { opacity: 0.8; }
+.sky-cloudy .fx-sun { opacity: 0.55; }
+.fx-rays { right: -12cqw; top: -38cqh; width: min(70cqw, 640px); aspect-ratio: 1; border-radius: 50%; opacity: 0.5;
+  background: repeating-conic-gradient(from 0deg, var(--sun-glow) 0deg 3deg, transparent 3deg 18deg);
+  -webkit-mask: radial-gradient(closest-side, #000 18%, transparent 70%); mask: radial-gradient(closest-side, #000 18%, transparent 70%);
+  animation: sun-spin 140s linear infinite; }
+@keyframes sun-breathe { from { transform: scale(0.94); } to { transform: scale(1.06); } }
+@keyframes sun-spin { to { transform: rotate(360deg); } }
+.fx-cloud { left: 0; top: var(--top); width: var(--w); height: calc(var(--w) * 0.36); transform: translateX(var(--rest)); animation: cloud-drift var(--dur) linear infinite; animation-delay: var(--delay); filter: blur(10px); }
+.fx-cloud::before, .fx-cloud::after, .fx-cloud i { content: ""; position: absolute; border-radius: 50%; background: var(--cloud); }
+.fx-cloud::before { left: 0; bottom: 0; width: 100%; height: 62%; }
+.fx-cloud::after { left: 18%; bottom: 28%; width: 46%; height: 88%; }
+.fx-cloud i { left: 48%; bottom: 20%; width: 38%; height: 70%; }
+.fx-cloud.heavy::before, .fx-cloud.heavy::after, .fx-cloud.heavy i { background: var(--cloud-heavy); }
+@keyframes cloud-drift { from { transform: translateX(calc(-1 * var(--w))); } to { transform: translateX(100cqw); } }
+.fx-fog { left: -40cqw; width: 180cqw; height: 26cqh; top: var(--top); background: linear-gradient(90deg, transparent, var(--cloud-heavy) 30%, var(--cloud) 55%, var(--cloud-heavy) 75%, transparent); filter: blur(14px); animation: fog-drift var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
+@keyframes fog-drift { from { transform: translateX(-12cqw); } to { transform: translateX(12cqw); } }
+.fx-drop { top: -40px; left: var(--x); width: 1.5px; height: var(--len); border-radius: 1px; background: linear-gradient(to bottom, transparent, var(--rain)); transform: rotate(12deg); animation: rain-fall var(--dur) linear infinite; animation-delay: var(--delay); }
+@keyframes rain-fall { from { transform: translate3d(0, 0, 0) rotate(12deg); } to { transform: translate3d(-22cqh, calc(100cqh + 80px), 0) rotate(12deg); } }
+.fx-flash { inset: 0; opacity: 0; background: radial-gradient(ellipse 70% 60% at 72% 0%, var(--flash), transparent 70%); animation: storm-flash 13s ease-out infinite; animation-delay: 4s; }
+/* One soft flash every 13 s, never a strobe. */
+@keyframes storm-flash { 0%, 90% { opacity: 0; } 91% { opacity: 0.9; } 97%, 100% { opacity: 0; } }
+.fx-star { left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%; background: var(--star); animation: twinkle var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
+@keyframes twinkle { from { opacity: 0.15; } to { opacity: 1; } }
+.hero.stale .sky-fx > * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .sky-fx > * { animation: none !important; }
+  .fx-drop, .fx-flash { display: none; }
+}
 
 /* rail sections */
 .section-row { display: grid; grid-template-columns: var(--rail) 1fr; gap: 24px; margin-top: var(--gap); align-items: start; }
@@ -372,11 +430,13 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
   <div id="app-body">
     <main id="main-content" style="display:none">
       <section class="hero" id="hero" aria-label="Today's sun">
+        <div class="sky-fx" id="sky-fx" aria-hidden="true"></div>
         <div class="hero-inner">
           <div id="hero-live-wrap">
             <div class="hero-top">
               <div class="hero-figure"><span class="num" id="v-solar">–</span></div>
               <div class="hero-sub-mode" id="hero-sub-mode">right now</div>
+              <div class="hero-note" id="hero-note" role="status"></div>
             </div>
             <div class="hero-sofar">
               <div class="val" id="hero-sub-today"></div>
@@ -402,6 +462,7 @@ header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight
                 </defs>
                 <line id="cap-line" x1="0" y1="20" x2="1000" y2="20" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
                 <line id="horizon-line" x1="0" y1="340" x2="1000" y2="340" stroke="var(--mist)" stroke-width="1.5"/>
+                <g id="outage-bands"></g>
                 <g id="hour-bars"></g>
                 <path id="clear-path" fill="none" stroke="var(--mist-strong)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"></path>
                 <text id="clear-label" class="clear-label" x="0" y="0" text-anchor="middle">clear sky</text>
@@ -610,19 +671,21 @@ function render() {
 
   ['banner-auth', 'banner-api', 'banner-stale'].forEach(hideBanner);
   const ageSec = (Date.now() - new Date(state.live.updated_at).getTime()) / 1000;
-  const isStale = state.status === 'stale' || (state.status === 'ok' && ageSec > 300);
+  // The worker polls every 5 minutes, so figures up to ~5.5 min old are
+  // normal. Only call them stale once a whole poll has been missed.
+  const isStale = state.status === 'stale' || (state.status === 'ok' && ageSec > STALE_SEC);
 
   if (state.status === 'auth_failed') $('banner-auth').classList.add('show');
   else if (state.status === 'api_error') { $('api-msg').textContent = "WAAREE isn't responding right now. We'll keep trying."; $('banner-api').classList.add('show'); }
   else if (isStale) {
     $('banner-stale').classList.add('show');
     const t = new Date(state.live.updated_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-    $('stale-msg').textContent = `No fresh figures from WAAREE. These are from ${t}.`;
+    $('stale-msg').textContent = `Couldn't get new figures from WAAREE since ${t}. The dashboard keeps trying every 5 minutes.`;
   }
 
   const dotEl = $('status-dot'), textEl = $('status-text');
   if (isStale) { dotEl.className = 'dot hollow'; textEl.textContent = `Last updated ${relTime(ageSec)}`; }
-  else { dotEl.className = 'dot'; textEl.textContent = `Live, updated ${relTime(ageSec)}`; }
+  else { dotEl.className = 'dot live'; textEl.textContent = `Live, updated ${relTime(ageSec)}`; }
 
   $('hero').classList.toggle('stale', isStale);
 
@@ -631,11 +694,193 @@ function render() {
   const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
   const isNight = nowMin < sunriseMin || nowMin > sunsetMin;
 
+  diag = diagnose(isNight, isStale);
   renderHero(isNight);
   renderLedger(isNight);
   renderCalendar();
   renderYear();
   renderSystem(isNight);
+}
+const STALE_SEC = 11 * 60;
+let diag = null; // why the panels aren't producing, when it isn't the weather
+
+// ---- outages: daylight spans with no output while there was sun to use ----
+// WAAREE doesn't report grid voltage, so this is inferred. A grid-tied
+// inverter switches off when the mains goes down but its logger keeps
+// reporting zeros; if the logger loses power or Wi-Fi, the samples stop
+// altogether. Either way, it only counts when the forecast says there was
+// real sun, so a dark rainy hour isn't mistaken for a fault.
+const DEAD_KW = 0.03;
+function findOutages(isNight, isStale) {
+  const s = (state.today.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
+  const lo = sunriseMin + 60, hi = sunsetMin - 60;
+  const ist = istNow();
+  const nowMin = isNight ? sunsetMin : ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const fc = forecastToday();
+  const floorKw = Math.max(0.15, (state.plant.capacity_w || 3500) / 1000 * 0.05);
+  const fcIn = (a, b) => fc ? fc.series.filter(p => { const t = hhmmToMin(p.t); return t >= a && t <= b; }) : [];
+  const spans = [];
+  const add = (from, to, kind, ongoing) => {
+    from = Math.max(from, lo); to = Math.min(to, hi);
+    if (to - from < 15) return;
+    const pts = fcIn(from, to);
+    if (pts.length && pts.reduce((a, p) => a + p.expected_w, 0) / pts.length / 1000 < floorKw) return;
+    spans.push({ from, to, kind, ongoing, lostWh: pts.length ? pts.reduce((a, p) => a + p.expected_w * 0.25, 0) : null });
+  };
+  let start = null;
+  for (let i = 0; i < s.length; i++) {
+    const [t, kw] = s[i];
+    if (i > 0 && t - s[i - 1][0] > 25) {
+      if (start != null) { add(start, s[i - 1][0], 'zero', false); start = null; }
+      add(s[i - 1][0], t, 'gap', false);
+    }
+    if (kw < DEAD_KW) { if (start == null) start = t; }
+    else if (start != null) { add(start, t, 'zero', false); start = null; }
+  }
+  const lastT = s.length ? s[s.length - 1][0] : null;
+  if (start != null) add(start, nowMin, 'zero', !isNight);
+  // Samples stopped arriving, though our own poll is fresh.
+  if (!isNight && !isStale && lastT != null && nowMin - lastT > 25) add(lastT, nowMin, 'gap', true);
+  // A zero run straight into a silence is one event.
+  spans.sort((a, b) => a.from - b.from);
+  const out = [];
+  for (const sp of spans) {
+    const prev = out[out.length - 1];
+    if (prev && sp.from <= prev.to + 5) {
+      prev.to = Math.max(prev.to, sp.to); prev.ongoing = prev.ongoing || sp.ongoing;
+      if (sp.ongoing) prev.kind = sp.kind;
+      prev.lostWh = prev.lostWh != null || sp.lostWh != null ? (prev.lostWh || 0) + (sp.lostWh || 0) : null;
+    } else out.push({ ...sp });
+  }
+  return out;
+}
+function hmOf(min) { return `${pad2(Math.floor(min / 60) % 24)}:${pad2(Math.round(min % 60))}`; }
+function latestAlarm() {
+  const a = (state.alarms || []).slice().sort((x, y) => String(x.time).localeCompare(String(y.time)));
+  return a[a.length - 1] || null;
+}
+function diagnose(isNight, isStale) {
+  if (isNight || isStale) return null;
+  const d = (state.devices || [])[0];
+  const alarm = latestAlarm();
+  if (d && d.status === 2) {
+    return { kind: 'fault', title: 'The inverter is reporting a fault.',
+      detail: alarm ? `WAAREE says: ${alarm.content}.` : "Check the inverter's display for an error code." };
+  }
+  const cur = findOutages(isNight, isStale).find(sp => sp.ongoing);
+  if (!cur) return null;
+  const since = to12h(hmOf(cur.from));
+  if (cur.kind === 'gap' || (d && d.status === 3)) {
+    return { kind: 'offline', from: cur.from, title: `No word from the inverter since ${since}.`,
+      detail: "WAAREE itself is answering, so the problem is at home. The inverter may have lost power, or its Wi-Fi may be down." };
+  }
+  if (alarm && hhmmToMin((/\d{2}:\d{2}/.exec(alarm.time) || ['00:00'])[0]) >= cur.from - 30) {
+    return { kind: 'fault', from: cur.from, title: `Stopped at ${since}, with an alarm.`, detail: `WAAREE says: ${alarm.content}.` };
+  }
+  const fc = forecastToday();
+  let expKw = null;
+  if (fc) for (const p of fc.series) if (hhmmToMin(p.t) <= cur.to + 8) expKw = p.expected_w / 1000;
+  return { kind: 'outage', from: cur.from,
+    title: expKw != null ? `No output since ${since}, with about ${fmtIN(1).format(expKw)} kW of sun to use.` : `No output since ${since}.`,
+    detail: "The inverter is still online, so this is most likely a power cut. Grid-tied inverters switch off when the mains goes down, and start again a few minutes after it's back." };
+}
+
+// ---- sky backdrop ----
+// Conditions for this hour from Open-Meteo's forecast. `?sky=<kind>` forces
+// one, for checking each look.
+const SKY_KINDS = ['clear', 'fair', 'cloudy', 'overcast', 'fog', 'drizzle', 'rain', 'storm'];
+const SKY_FORCED = (() => { try { const k = new URLSearchParams(location.search).get('sky'); return SKY_KINDS.includes(k) ? k : null; } catch (e) { return null; } })();
+function skyKind(code, cloud) {
+  if (code >= 95) return 'storm';
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+  if (code >= 51 && code <= 57) return 'drizzle';
+  if (code === 45 || code === 48) return 'fog';
+  if (code === 3 || cloud >= 85) return 'overcast';
+  if (code === 2 || cloud >= 45) return 'cloudy';
+  if (code === 1 || cloud >= 15) return 'fair';
+  return 'clear';
+}
+function skyNow() {
+  if (SKY_FORCED) return { kind: SKY_FORCED, cloud: null };
+  const f = state.forecast;
+  const day = f && f.today && f.today.date === todayIso() ? f.today : null;
+  if (!day) return null;
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  let pt = null;
+  for (const p of day.sky || []) if (!pt || Math.abs(hhmmToMin(p.t) - nowMin) < Math.abs(hhmmToMin(pt.t) - nowMin)) pt = p;
+  const code = pt ? pt.code : day.weather_code;
+  const cloud = pt ? pt.cloud : day.cloud_pct;
+  if (code == null && cloud == null) return null;
+  return { kind: skyKind(code, cloud), cloud };
+}
+function skyPhrase(kind, isNight) {
+  return { clear: 'clear sky', fair: isNight ? 'mostly clear' : 'mostly sunny', cloudy: 'partly cloudy', overcast: 'overcast',
+    fog: 'foggy', drizzle: 'drizzling', rain: 'raining', storm: 'thunderstorms' }[kind] || '';
+}
+let skyKey = '';
+function renderSky(sky, isNight) {
+  const kind = sky ? sky.kind : null;
+  const key = `${kind}|${isNight}`;
+  if (key === skyKey) return;
+  skyKey = key;
+  const el = $('sky-fx');
+  el.className = 'sky-fx' + (kind ? ` sky-${kind}` : '') + (isNight ? ' night' : '');
+  if (!kind) { el.innerHTML = ''; return; }
+  // Fixed seed: the same sky lays out the same way on every render.
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const f1 = (n) => n.toFixed(1);
+  let h = '';
+  const fine = kind === 'clear' || kind === 'fair' || kind === 'cloudy';
+  if (fine && !isNight) h += '<div class="fx-sun"></div>' + (kind === 'clear' ? '<div class="fx-rays"></div>' : '');
+  if (fine && isNight) {
+    const n = kind === 'clear' ? 28 : kind === 'fair' ? 18 : 9;
+    for (let i = 0; i < n; i++) {
+      const dur = 2 + rnd() * 3;
+      h += `<div class="fx-star" style="--x:${f1(rnd() * 100)}%;--y:${f1(rnd() * 55)}%;--s:${f1(1.2 + rnd() * 1.6)}px;--dur:${f1(dur)}s;--delay:${f1(-rnd() * dur)}s"></div>`;
+    }
+  }
+  if (kind === 'fog') {
+    for (let i = 0; i < 4; i++) h += `<div class="fx-fog" style="--top:${f1(8 + i * 22)}%;--dur:${f1(26 + rnd() * 20)}s;--delay:${f1(-rnd() * 30)}s"></div>`;
+  }
+  const clouds = { fair: 2, cloudy: 4, overcast: 6, fog: 1, drizzle: 5, rain: 6, storm: 7 }[kind] || 0;
+  const heavy = kind === 'overcast' || kind === 'rain' || kind === 'storm';
+  for (let i = 0; i < clouds; i++) {
+    const w = 22 + rnd() * 26, dur = 80 + rnd() * 90;
+    h += `<div class="fx-cloud${heavy ? ' heavy' : ''}" style="--w:clamp(130px, ${f1(w)}cqw, 420px);--top:${f1(-8 + rnd() * 34)}%;--dur:${f1(dur)}s;--delay:${f1(-rnd() * dur)}s;--rest:${f1(rnd() * 85)}cqw"><i></i></div>`;
+  }
+  const drops = { drizzle: 26, rain: 64, storm: 84 }[kind] || 0;
+  for (let i = 0; i < drops; i++) {
+    const slow = kind === 'drizzle';
+    const dur = slow ? 1.2 + rnd() * 0.6 : 0.55 + rnd() * 0.35;
+    h += `<div class="fx-drop" style="--x:${f1(rnd() * 125)}%;--len:${Math.round(slow ? 7 + rnd() * 5 : 12 + rnd() * 16)}px;--dur:${f1(dur)}s;--delay:${(-rnd() * dur).toFixed(2)}s"></div>`;
+  }
+  if (kind === 'storm') h += '<div class="fx-flash"></div>';
+  el.innerHTML = h;
+}
+
+// The big figure eases to each new reading instead of jumping.
+const reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+let shownW = null, targetW = null, tweenRaf = 0;
+function setLiveFigure(w) {
+  w = Math.max(0, w || 0);
+  if (w === targetW) return;
+  targetW = w;
+  cancelAnimationFrame(tweenRaf);
+  const from = shownW;
+  if (from == null || reduceMotion.matches || Math.abs(w - from) < 30) {
+    shownW = w; $('v-solar').innerHTML = html(fmtPower(w)); return;
+  }
+  const t0 = performance.now(), dur = 700;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    shownW = from + (w - from) * e;
+    $('v-solar').innerHTML = html(fmtPower(shownW));
+    if (k < 1) tweenRaf = requestAnimationFrame(step);
+  };
+  tweenRaf = requestAnimationFrame(step);
 }
 
 // ---- weather forecast (state.forecast, from Open-Meteo via the worker) ----
@@ -702,13 +947,15 @@ function renderHero(isNight) {
     $('hero-live-wrap').style.display = 'contents';
     $('hero-sentences').style.display = 'none';
     const madeWh = state.today.produced_wh || 0;
+    const sky = skyNow();
     if (isNight) {
-      $('v-solar').innerHTML = html(fmtPower(0));
+      setLiveFigure(0);
       $('hero-sub-mode').textContent = `The sun's down. Panels wake up around ${to12h(state.sun.sunrise)}.`;
       $('hero-sub-today').textContent = `${fmtKwh(madeWh)} today`;
     } else {
-      $('v-solar').innerHTML = html(fmtPower(l.solar_w));
-      $('hero-sub-mode').textContent = 'right now';
+      setLiveFigure(l.solar_w);
+      const phrase = sky ? skyPhrase(sky.kind, false) : '';
+      $('hero-sub-mode').textContent = phrase ? `right now, ${phrase}` : 'right now';
       $('hero-sub-today').textContent = `${fmtKwh(madeWh)} so far today`;
     }
     // vs_yesterday_wh compares against yesterday up to this same time of day.
@@ -733,11 +980,16 @@ function renderHero(isNight) {
     }
   }
 
+  const note = $('hero-note');
+  const noteHtml = diag ? `<svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><div><b>${esc(diag.title)}</b><span>${esc(diag.detail)}</span></div>` : '';
+  if (note.__html !== noteHtml) { note.__html = noteHtml; note.innerHTML = noteHtml; note.classList.toggle('show', !!diag); }
+  renderSky(skyNow(), isNight);
+
   drawArc(isNight);
 
   if (!window.__liveSummaryTimer || Date.now() - window.__liveSummaryTimer > 60000) {
     window.__liveSummaryTimer = Date.now();
-    $('live-summary').textContent = `Making ${fmtPower(state.live.solar_w).text} kilowatts. ${fmtIN(1).format((state.today.produced_wh||0)/1000)} kilowatt hours so far today.`;
+    $('live-summary').textContent = `Making ${fmtPower(state.live.solar_w).text} kilowatts. ${fmtIN(1).format((state.today.produced_wh||0)/1000)} kilowatt hours so far today.${diag ? ' ' + diag.title : ''}`;
   }
 }
 
@@ -877,11 +1129,19 @@ function drawArc(isNight) {
   // last real sample.
   const futureFc = isNight ? [] : fcPts.filter(p => p[0] > nowMin && p[0] <= sunsetMin);
   const fcXY = futureFc.map(p => [x(p[0]), y(p[1])]);
-  if (fcXY.length && pathPts.length) fcXY.unshift(pathPts[pathPts.length - 1]);
+  if (fcXY.length && pathPts.length && !diag) fcXY.unshift(pathPts[pathPts.length - 1]);
   $('fc-path').setAttribute('d', !hourly && fcXY.length > 1 ? smoothPath(fcXY) : '');
   // Forecast label goes under its line (the clear-sky label sits above).
   const fcAt = fcXY.length > 6 ? fcXY[Math.floor(fcXY.length * 0.3)] : null;
   label('fc-label', !hourly && fcAt && W >= 560 ? [fcAt[0], Math.min(y(0) - 6, fcAt[1] + 30)] : null);
+
+  // Outages: a shaded band over each span the panels were off with sun about.
+  $('outage-bands').innerHTML = findOutages(isNight, $('hero').classList.contains('stale')).map(sp => {
+    const x0 = x(sp.from), x1 = x(Math.min(sp.to, isNight ? sunsetMin : nowMin));
+    const w = Math.max(0, x1 - x0);
+    const lbl = w >= 54 ? `<text class="outage-label" x="${x0 + w / 2}" y="${y(0) - 8}" text-anchor="middle">${sp.kind === 'gap' ? 'no data' : 'no power'}</text>` : '';
+    return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>${lbl}`;
+  }).join('');
 
   // Yesterday's dotted ghost: only when there's no forecast to compare with.
   const yList = (state.yesterday.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
@@ -991,8 +1251,14 @@ function renderLedger(isNight) {
   const mName = MONTH_FULL[(state.month.month || (now.getUTCMonth() + 1)) - 1];
   const fcT = forecastToday();
   const sky = fcT ? weatherLabel(fcT.weather_code) : '';
+  const outs = findOutages(isNight, $('hero').classList.contains('stale')).filter(sp => !sp.ongoing);
+  const outHtml = outs.map(sp => {
+    const span = `${to12h(hmOf(sp.from))} to ${to12h(hmOf(sp.to))}`;
+    const lost = sp.lostWh != null && sp.lostWh >= 100 ? ` About ${fmtKwh(sp.lostWh)} missed.` : '';
+    return `<br><span class="note-warn">${sp.kind === 'gap' ? `No data from ${span}.` : `Off from ${span}, most likely a power cut.`}${lost}</span>`;
+  }).join('');
   $('today-note').innerHTML = `${WEEKDAY_FULL[now.getUTCDay()]} ${now.getUTCDate()} ${mName}` +
-    (sky ? `<br>${cap1(sky)}${fcT.cloud_pct != null ? `, ${fcT.cloud_pct}% cloud` : ''}` : '');
+    (sky ? `<br>${cap1(sky)}${fcT.cloud_pct != null ? `, ${fcT.cloud_pct}% cloud` : ''}` : '') + outHtml;
   const cells = [];
   const price = state.plant.price_per_kwh;
   cells.push({
@@ -1189,6 +1455,8 @@ function renderSystem(isNight) {
   } else if (alarms.length) {
     out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. Worth a look.</p>`;
     out += `<ul class="sys-alarms">${alarms.slice(0, 5).map(a => `<li><span class="t">${esc(fmtAlarmTime(a.time))}</span>${esc(a.content)}</li>`).join('')}</ul>`;
+  } else if (diag) {
+    out += `<p class="sys-status alert"><span class="dot"></span>${esc(diag.title)}</p>`;
   } else if (d.status === 2) {
     out += `<p class="sys-status alert"><span class="dot"></span>The inverter is reporting a fault.</p>`;
   } else if (d.status !== 1 && isNight) {
