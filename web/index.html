@@ -38,7 +38,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
   --focus: var(--ink);
   --gap: 64px;
   --rail: 240px;
@@ -62,7 +62,7 @@
     --alert: #F08A80; --alert-soft: #3A1F24;
     --warn: #F2C46A; --warn-soft: #33291A;
     --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
   }
 }
 :root[data-theme="dark"] {
@@ -72,7 +72,7 @@
   --alert: #F08A80; --alert-soft: #3A1F24;
   --warn: #F2C46A; --warn-soft: #33291A;
   --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
 }
 :root[data-theme="light"] {
   --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
@@ -81,7 +81,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
@@ -249,19 +249,25 @@ button:active:not(:disabled) { transform: scale(0.97); }
 @media (max-width: 600px) {
   .sky-fx { -webkit-mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); }
 }
+/* Light falls off on an eased curve (many stops, not two), so there's no
+   visible ring where a linear gradient would end. */
+.fx-sun, .fx-halo { --sun-fade: radial-gradient(closest-side, var(--sun-glow) 0%, color-mix(in srgb, var(--sun-glow) 82%, transparent) 14%, color-mix(in srgb, var(--sun-glow) 62%, transparent) 28%, color-mix(in srgb, var(--sun-glow) 42%, transparent) 42%, color-mix(in srgb, var(--sun-glow) 26%, transparent) 56%, color-mix(in srgb, var(--sun-glow) 14%, transparent) 70%, color-mix(in srgb, var(--sun-glow) 6%, transparent) 84%, transparent 100%); }
 .fx-sun, .fx-halo { right: calc(var(--sun-cx) - var(--sun-w) / 2); top: calc(var(--sun-cy) - var(--sun-w) / 2); width: var(--sun-w); }
-.fx-sun { aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, var(--sun-glow), transparent 72%); animation: sun-breathe 9s ease-in-out infinite alternate; }
+.fx-sun { aspect-ratio: 1; border-radius: 50%; background: var(--sun-fade); animation: sun-breathe 9s ease-in-out infinite alternate; }
 .sky-fair .fx-sun { opacity: 0.8; }
 .sky-cloudy .fx-sun { opacity: 0.55; }
 /* Clear sky adds a wide, faint halo that breathes out of step with the core,
    so the light swells softly instead of spinning. */
 .fx-halo { aspect-ratio: 1; border-radius: 50%; opacity: 0.5; transform: scale(1.6);
-  background: radial-gradient(closest-side, var(--sun-glow), transparent 80%);
+  background: var(--sun-fade);
   animation: halo-breathe 13s ease-in-out infinite alternate; }
 /* A still, luminous core right behind the icon. Only the glow and halo
    breathe, so the sun itself stays put. */
-.fx-disc { right: calc(var(--sun-cx) - 60px); top: calc(var(--sun-cy) - 60px); width: 120px; aspect-ratio: 1; border-radius: 50%;
-  background: radial-gradient(circle, var(--sun-core), transparent 68%); }
+.fx-disc { right: calc(var(--sun-cx) - 110px); top: calc(var(--sun-cy) - 110px); width: 220px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sun-core) 0%, color-mix(in srgb, var(--sun-core) 82%, transparent) 14%, color-mix(in srgb, var(--sun-core) 62%, transparent) 28%, color-mix(in srgb, var(--sun-core) 42%, transparent) 42%, color-mix(in srgb, var(--sun-core) 26%, transparent) 56%, color-mix(in srgb, var(--sun-core) 14%, transparent) 70%, color-mix(in srgb, var(--sun-core) 6%, transparent) 84%, transparent 100%); }
+/* Night: a faint, cool moonlight on the same spot and curve, no motion. */
+.fx-moon { right: calc(var(--sun-cx) - 200px); top: calc(var(--sun-cy) - 200px); width: 400px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--moon-glow) 0%, color-mix(in srgb, var(--moon-glow) 62%, transparent) 28%, color-mix(in srgb, var(--moon-glow) 26%, transparent) 56%, color-mix(in srgb, var(--moon-glow) 6%, transparent) 84%, transparent 100%); }
 .sky-fair .fx-disc { opacity: 0.7; }
 .sky-cloudy .fx-disc { opacity: 0.4; }
 @keyframes sun-breathe { from { transform: scale(0.94); } to { transform: scale(1.06); } }
@@ -901,6 +907,7 @@ function renderSky(sky, isNight) {
   const fine = kind === 'clear' || kind === 'fair' || kind === 'cloudy';
   if (fine && !isNight) h += '<div class="fx-sun"></div>' + (kind === 'clear' ? '<div class="fx-halo"></div>' : '') + '<div class="fx-disc"></div>';
   if (fine && isNight) {
+    h += '<div class="fx-moon"></div>';
     const n = kind === 'clear' ? 28 : kind === 'fair' ? 18 : 9;
     for (let i = 0; i < n; i++) {
       const dur = 2 + rnd() * 3;
