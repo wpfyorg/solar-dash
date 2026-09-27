@@ -276,17 +276,12 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .ledger { display: flex; gap: 32px; }
 @media (max-width: 600px) { .ledger { flex-wrap: wrap; gap: 20px 24px; } }
 @media (max-width: 480px) { .ledger { gap: 20px 16px; } }
-.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 120px; }
+.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 0; }
 @media (max-width: 480px) { .ledger .cell { flex: 1 1 40%; } }
 .ledger .cell .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
 .ledger-icon { width: 26px; height: 26px; margin-right: 8px; vertical-align: -3px; }
 .ledger .cell .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
-/* nowrap only where a cell is actually wide enough for it (desktop, four
-   ~190px+ cells) — at tablet widths the same four-cells-in-a-row layout
-   gives each cell only ~150px, so a forced nowrap just overflows into the
-   next cell instead of wrapping, running two labels together. */
-.ledger .cell .label { font-size: var(--fs-body); color: var(--ink-soft); margin-top: 6px; }
-@media (min-width: 1100px) { .ledger .cell .label { white-space: nowrap; } }
+.ledger .cell .label { font-size: var(--fs-body); line-height: 1.35; color: var(--ink-soft); margin-top: 6px; text-wrap: pretty; }
 
 /* month body: calendar + stats column */
 /* Grid, not flex: the chart/calendar column is `max-content` (its own
@@ -339,22 +334,46 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .year-labels span { flex: 1 1 0; text-align: center; font-size: var(--fs-small); color: var(--ink-soft); }
 .year-labels span.current { color: var(--ink); font-weight: 600; }
 
-/* system section: a status headline, then label/value rows */
-.sys-status { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; margin: 0 0 20px; }
-.sys-status .dot { width: 10px; height: 10px; }
-.sys-status.alert { color: var(--alert); }
-.sys-status.alert .dot { background: var(--alert); }
-.sys-status.rest .dot { background: transparent; border: 1.5px solid var(--ink-soft); }
-.sys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; margin: 0; }
-@media (max-width: 700px) { .sys-grid { grid-template-columns: 1fr; } }
-.sys-grid > div { border-top: 1px solid var(--mist); padding: 12px 0 14px; }
-.sys-grid dt { font-size: var(--fs-small); color: var(--ink-soft); margin: 0 0 3px; }
-.sys-grid dd { margin: 0; font-size: 17px; font-weight: 500; }
-.sys-grid dd .more { display: block; font-size: var(--fs-body); font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
-.sys-foot { font-size: var(--fs-small); color: var(--ink-soft); margin: 16px 0 0; }
-.log { margin: 0 0 36px; }
-.log-head { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
-.log-empty { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+/* System status and history share one compact table. The metadata beneath it
+   behaves like a single-line footer and scrolls horizontally when needed. */
+@media (min-width: 1100px) {
+  .system-row { display: block; }
+  .system-row .section-head { margin-bottom: 16px; }
+}
+.sys-body { min-width: 0; }
+.sys-table-wrap { overflow-x: auto; border-top: 1px solid var(--mist); border-bottom: 1px solid var(--mist); }
+.sys-table { width: 100%; min-width: 620px; border-collapse: collapse; table-layout: fixed; }
+.sys-table col.when { width: 170px; }
+.sys-table col.event { width: 210px; }
+.sys-table th { padding: 8px 12px 8px 0; text-align: left; color: var(--ink-soft); font-size: var(--fs-small); font-weight: 500; }
+.sys-table td { padding: 12px 12px 12px 0; vertical-align: top; border-top: 1px solid var(--mist); }
+.sys-table .when { font-size: var(--fs-small); }
+.sys-table .when strong { display: block; color: var(--ink); font-weight: 600; }
+.sys-table .when span { display: block; color: var(--ink-soft); }
+.sys-table .event { display: flex; align-items: flex-start; gap: 9px; font-weight: 600; }
+.sys-table .event .dot { width: 9px; height: 9px; margin-top: 5px; }
+.sys-table .event .log-icon { flex: none; margin-top: 2px; color: var(--ink-soft); }
+.sys-table tr.power_cut .log-icon, .sys-table tr.alarm .log-icon { color: var(--alert); }
+.sys-table tr.ongoing .event { color: var(--alert); }
+.sys-table tr.status.alert .event, .sys-table tr.status.alert .detail { color: var(--alert); }
+.sys-table tr.status.alert .dot { background: var(--alert); }
+.sys-table tr.status.rest .dot { background: transparent; border: 1.5px solid var(--ink-soft); }
+.sys-table .detail { color: var(--ink-soft); }
+.sys-table .empty { color: var(--ink-soft); }
+.sys-meta { display: flex; align-items: baseline; margin-top: 14px; padding-top: 2px; overflow-x: auto; scrollbar-width: none; white-space: nowrap; font-size: var(--fs-small); }
+.sys-meta::-webkit-scrollbar { display: none; }
+.sys-meta-item { display: inline-flex; align-items: baseline; gap: 6px; flex: none; }
+.sys-meta-item + .sys-meta-item::before { content: "·"; color: var(--mist-strong); margin: 0 12px 0 10px; }
+.sys-meta .k { color: var(--ink-soft); }
+.sys-meta .v { color: var(--ink); font-weight: 500; }
+.sys-meta .more { color: var(--ink-soft); font-weight: 400; }
+.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
+@media (max-width: 600px) {
+  .sys-table { min-width: 560px; }
+  .sys-table col.when { width: 125px; }
+  .sys-table col.event { width: 155px; }
+}
+/* Day-detail logs keep the compact stacked list treatment. */
 .log-list { list-style: none; margin: 0; padding: 0; }
 .log-row { display: grid; grid-template-columns: 150px 20px 1fr; gap: 4px 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--mist); }
 .log-when { display: flex; flex-direction: column; font-size: var(--fs-small); }
@@ -365,7 +384,6 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .log-what b { display: block; font-weight: 600; }
 .log-what span { color: var(--ink-soft); }
 .log-row.ongoing .log-what b { color: var(--alert); }
-.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
 @media (max-width: 480px) { .log-row { grid-template-columns: 20px 1fr; } .log-when { grid-column: 1 / -1; flex-direction: row; gap: 8px; } }
 /* month navigation + clickable days/bars */
 .month-rail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -539,7 +557,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
         </div>
       </div>
 
-      <div class="section-row">
+      <div class="section-row system-row">
         <h2 class="section-head">System</h2>
         <div class="sys-body" id="sys-body"></div>
       </div>
@@ -1434,23 +1452,31 @@ function renderSystem(isNight) {
   const p = state.plant;
   const d = devs[0];
   let out = '';
+  let statusClass = '';
+  let statusText = '';
 
-  // Headline: one plain sentence about whether anything needs attention.
+  // Current status becomes the first row in the system table.
   if (!d) {
-    out += `<p class="sys-status rest"><span class="dot"></span>Waiting for inverter details from WAAREE.</p>`;
+    statusClass = 'rest';
+    statusText = 'Waiting for inverter details from WAAREE.';
   } else if (alarms.length) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. See what happened below.</p>`;
+    statusClass = 'alert';
+    statusText = `${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today.`;
   } else if (diag) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${esc(diag.title)}</p>`;
+    statusClass = 'alert';
+    statusText = esc(diag.title);
   } else if (d.status === 2) {
-    out += `<p class="sys-status alert"><span class="dot"></span>The inverter is reporting a fault.</p>`;
+    statusClass = 'alert';
+    statusText = 'The inverter is reporting a fault.';
   } else if (d.status !== 1 && isNight) {
     // An inverter is always "offline" at night; not something to flag.
-    out += `<p class="sys-status rest"><span class="dot"></span>All quiet. The inverter sleeps until sunrise.</p>`;
+    statusClass = 'rest';
+    statusText = 'All quiet. The inverter sleeps until sunrise.';
   } else if (d.status !== 1) {
-    out += `<p class="sys-status alert"><span class="dot"></span>The inverter is offline.</p>`;
+    statusClass = 'alert';
+    statusText = 'The inverter is offline.';
   } else {
-    out += `<p class="sys-status"><span class="dot"></span>All good. The inverter is online, with no alarms today.</p>`;
+    statusText = 'All good. The inverter is online, with no alarms today.';
   }
 
   const rows = [];
@@ -1495,11 +1521,10 @@ function renderSystem(isNight) {
   }
   if (d && d.sn) rows.push(['Inverter serial', `ends in ${esc(d.sn.slice(-6))}`, '']);
 
-  // Status, then the log, then the fixed details.
-  out += renderLog();
-  out += `<h3 class="log-head">System details</h3>`;
-  out += `<dl class="sys-grid">${rows.map(([k, v, more]) => `<div><dt>${k}</dt><dd>${v}${more ? `<span class="more">${more}</span>` : ''}</dd></div>`).join('')}</dl>`;
-  out += `<p class="sys-foot">Figures come from WAAREE every 5 minutes.${state.has_meter ? '' : ' Add an energy meter to see what your home uses and what goes to the grid.'}</p>`;
+  out += renderSystemTable(statusClass, statusText);
+  rows.push(['Source', 'WAAREE every 5 minutes', '']);
+  if (!state.has_meter) rows.push(['Meter', 'not connected', 'home use and grid flow unavailable']);
+  out += `<footer class="sys-meta" aria-label="System details">${rows.map(([k, v, more]) => `<span class="sys-meta-item"><span class="k">${k}</span><span class="v">${v}${more ? `<span class="more"> · ${more}</span>` : ''}</span></span>`).join('')}</footer>`;
   const body = $('sys-body');
   if (body.__html !== out) {
     body.__html = out; body.innerHTML = out;
@@ -1534,25 +1559,34 @@ function logLine(e) {
     detail: `${e.ongoing ? 'Still going.' : fmtDuration(mins) + '.'} ${why}${lost}`,
   };
 }
-function renderLog() {
+function renderSystemTable(statusClass, statusText) {
   const events = state.events || [];
-  let out = '<div class="log"><h3 class="log-head">What happened</h3>';
-  if (!events.length) {
-    return out + '<p class="log-empty">Nothing unusual so far. Power cuts and inverter problems will appear here.</p></div>';
-  }
+  let out = `<div class="sys-table-wrap"><table class="sys-table">
+    <caption class="visually-hidden">Current system status and recent events</caption>
+    <colgroup><col class="when"><col class="event"><col></colgroup>
+    <thead><tr><th scope="col">When</th><th scope="col">Status / event</th><th scope="col">Details</th></tr></thead>
+    <tbody><tr class="status ${statusClass}">
+      <td class="when"><strong>Now</strong></td>
+      <td><span class="event"><span class="dot"></span>System status</span></td>
+      <td class="detail">${statusText}</td>
+    </tr>`;
   const shown = events.slice(0, logShown);
-  out += '<ol class="log-list">' + shown.map(e => {
+  out += shown.map(e => {
     const l = logLine(e);
-    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}">
-      <div class="log-when"><span class="d">${fmtLogDay(e.date)}</span><span class="t">${l.at}</span></div>
-      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
-      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div>
-    </li>`;
-  }).join('') + '</ol>';
+    return `<tr class="${l.cls}${e.ongoing ? ' ongoing' : ''}">
+      <td class="when"><strong>${fmtLogDay(e.date)}</strong><span>${l.at}</span></td>
+      <td><span class="event"><svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>${l.title}</span></td>
+      <td class="detail">${l.detail}</td>
+    </tr>`;
+  }).join('');
+  if (!events.length) {
+    out += '<tr><td></td><td class="empty" colspan="2">Nothing unusual so far. Power cuts and inverter problems will appear here.</td></tr>';
+  }
+  out += '</tbody></table></div>';
   if (events.length > shown.length) {
     out += `<button type="button" class="log-more" id="log-more">Load more</button>`;
   }
-  return out + '</div>';
+  return out;
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
