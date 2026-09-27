@@ -124,6 +124,8 @@ export function mockPoll(
     price_per_kwh: (plantGet.details?.price ?? 0) > 0 ? plantGet.details!.price! : null,
     panel_kwp: (plantBean?.capacity ?? 0) > 0 ? plantBean!.capacity! : null,
     install_date: installDate ? fmtDate(installDate) : null,
+    panel_count: null,
+    panel_w: null,
   };
 
   const today: Today = {
@@ -180,6 +182,8 @@ export function mockPoll(
     year,
     devices,
     alarms,
+    forecast: null,
+    events: [],
   };
 
   return state;
