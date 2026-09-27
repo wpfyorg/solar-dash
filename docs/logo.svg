@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">WAAREE Solar Dashboard</title>
+  <rect width="512" height="512" rx="112" fill="#15243B"/>
+  <g transform="translate(64 64) scale(3.84)">
+    <g fill="#F5C451">
+      <path d="M28.333 18.334c-5.521 0-9.999 4.479-9.999 10s4.479 10 9.999 10 10-4.479 10-10-4.479-10-10-10Zm0 14.166a4.167 4.167 0 1 1 0-8.333 4.167 4.167 0 0 1 0 8.333Z"/>
+      <rect x="25.833" y="41.667" width="5" height="5"/>
+      <rect x="10" y="25.834" width="5" height="5"/>
+      <rect x="41.667" y="25.834" width="5" height="5"/>
+      <rect x="13.46" y="11.793" width="5.001" height="8.332" transform="rotate(-45 15.96 15.959)"/>
+      <rect x="38.206" y="36.539" width="5.004" height="8.335" transform="rotate(-45 40.708 40.706)"/>
+      <rect x="13.459" y="36.54" width="5.001" height="8.336" transform="rotate(45 15.96 40.708)"/>
+      <rect x="38.206" y="11.792" width="5.001" height="8.335" transform="rotate(45 40.706 15.96)"/>
+      <rect x="25.833" y="10.001" width="5" height="5"/>
+    </g>
+    <g fill="#5CCB8A">
+      <rect x="73.332" y="43.334" width="6.668" height="33.332"/>
+      <rect x="43.333" y="53.333" width="6.666" height="23.333"/>
+      <polygon points="74.365,79.999 78.967,79.999 79.967,89.999 86.666,89.999 85,73.333 68.332,73.333 66.666,89.999 73.365,89.999"/>
+      <polygon points="44.366,79.999 48.968,79.999 49.967,89.999 56.666,89.999 55,73.333 38.333,73.333 36.667,89.999 43.366,89.999"/>
+      <polygon points="90,33.334 30,56.667 30,63.821 90,40.485"/>
+    </g>
+  </g>
+</svg>

@@ -6,7 +6,8 @@
 <title>Solar</title>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="icon" href="/icons/icon-192.png">
+<link rel="icon" href="/icons/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
 <meta name="theme-color" content="#EAF1F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1726" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -95,6 +96,8 @@ noscript { display: block; padding: 16px; color: var(--ink-soft); }
 
 /* header */
 header.app-header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; gap: 12px; flex-wrap: wrap; }
+.app-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.app-brand img { width: 38px; height: 38px; border-radius: 9px; flex: none; }
 header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight: 600; margin: 0; }
 .status-line { font-size: var(--fs-small); color: var(--ink-soft); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); display: inline-block; flex: none; }
@@ -483,7 +486,10 @@ button:active:not(:disabled) { transform: scale(0.97); }
 
 <div class="wrap">
   <header class="app-header">
-    <h1 id="plant-name">Home</h1>
+    <div class="app-brand">
+      <img src="/icons/logo.svg" alt="" width="38" height="38">
+      <h1 id="plant-name">Home</h1>
+    </div>
     <div class="status-line" id="status-line"><span class="dot hollow" id="status-dot"></span><span id="status-text">Connecting…</span></div>
   </header>
 
