@@ -4,7 +4,7 @@
   const LAT = 21.1292;
   const LON = 86.732285;
   const TILT_DEG = 23;
-  const PANEL_COUNT = 5;
+  const PANEL_COUNT = 6;
   const PANEL_W = 585;
   const PANEL_KWP = PANEL_COUNT * PANEL_W / 1000;
   const INVERTER_W = 3500;
