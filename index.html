@@ -1,0 +1,1872 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" href="./icons/icon-192.png">
+<meta name="theme-color" content="#EAF1F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1726" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Solar">
+<script>
+// `?theme=light|dark` forces a theme regardless of the OS preference —
+// for deterministic design-comparison screenshots. Runs before first
+// paint (synchronous, in <head>) so there's no flash of the wrong theme.
+(function () {
+  var t = new URLSearchParams(location.search).get('theme');
+  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+@font-face {
+  font-family: 'Schibsted Grotesk';
+  src: url('./font.woff2') format('woff2-variations'), url('./font.woff2') format('woff2');
+  font-weight: 400 600;
+  font-display: swap;
+}
+:root {
+  color-scheme: light dark;
+  --font: 'Schibsted Grotesk', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
+  --leaf: #2E9E5B; --leaf-deep: #1D6B3C; --grid: #2F6FA8; --plum: #6E4A7E;
+  --ghost: #8FA1B6;
+  --alert: #B4322A; --alert-soft: #F6E2E0;
+  --warn: #8A5A00; --warn-soft: #FBEFD6;
+  --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --focus: var(--ink);
+  --gap: 64px;
+  --rail: 240px;
+  --fs-plant: 24px; --fs-live: 96px; --fs-live-unit: 38px;
+  --fs-head: 20px; --fs-ledger: 32px; --fs-body: 15px; --fs-small: 13px;
+  --hero-h: 460px;
+}
+@media (max-width: 1099px) { :root { --fs-plant: 20px; --gap: 48px; --rail: 0; --hero-h: 480px; } }
+@media (max-width: 480px) { :root { --fs-live: 64px; --fs-live-unit: 26px; --gap: 40px; --hero-h: 460px; } }
+/* `data-theme` (set on <html> by a `?theme=light|dark` query param, see the
+   script below) forces a theme regardless of the OS preference — used for
+   deterministic design-comparison screenshots on a machine whose OS theme
+   would otherwise win. `:root[data-theme="dark"]` mirrors the prefers-color-
+   scheme block exactly; `:root[data-theme="light"]` re-asserts the default
+   light values so they win even when the OS is in dark mode. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sky: #0E1726; --paper: #152238; --ink: #E6EEF6; --ink-soft: #93A4B8; --mist: #2A3A52; --mist-strong: #405674;
+    --leaf: #5CCB8A; --leaf-deep: #5CCB8A; --grid: #6FA8DC; --plum: #B08CC2;
+    --ghost: #6F829C;
+    --alert: #F08A80; --alert-soft: #3A1F24;
+    --warn: #F2C46A; --warn-soft: #33291A;
+    --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+  }
+}
+:root[data-theme="dark"] {
+  --sky: #0E1726; --paper: #152238; --ink: #E6EEF6; --ink-soft: #93A4B8; --mist: #2A3A52; --mist-strong: #405674;
+  --leaf: #5CCB8A; --leaf-deep: #5CCB8A; --grid: #6FA8DC; --plum: #B08CC2;
+  --ghost: #6F829C;
+  --alert: #F08A80; --alert-soft: #3A1F24;
+  --warn: #F2C46A; --warn-soft: #33291A;
+  --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
+  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+}
+:root[data-theme="light"] {
+  --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
+  --leaf: #2E9E5B; --leaf-deep: #1D6B3C; --grid: #2F6FA8; --plum: #6E4A7E;
+  --ghost: #8FA1B6;
+  --alert: #B4322A; --alert-soft: #F6E2E0;
+  --warn: #8A5A00; --warn-soft: #FBEFD6;
+  --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
+body { font: 400 var(--fs-body)/1.45 var(--font); background: var(--sky); color: var(--ink); }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px 56px; }
+@media (max-width: 480px) { .wrap { padding: 0 16px 40px; } }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+noscript { display: block; padding: 16px; color: var(--ink-soft); }
+
+/* header */
+header.app-header { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; gap: 12px; flex-wrap: wrap; }
+header.app-header h1 { font-size: var(--fs-plant); line-height: 1.2; font-weight: 600; margin: 0; }
+.status-line { font-size: var(--fs-small); color: var(--ink-soft); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); display: inline-block; flex: none; }
+.dot.hollow { background: transparent; border: 1.5px solid var(--ink-soft); }
+/* A ring that breathes out from the status dot while figures are fresh. */
+.dot.live { box-shadow: 0 0 0 0 color-mix(in srgb, var(--leaf) 55%, transparent); animation: live-ring 2.6s ease-out infinite; }
+@keyframes live-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--leaf) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+button { transition: transform 0.12s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .dot.live { animation: none; } button:active:not(:disabled) { transform: none; } }
+
+/* banners */
+.banner { display: none; align-items: center; gap: 10px; border-radius: 8px; padding: 12px 16px; font-size: var(--fs-small); margin-bottom: 20px; }
+.banner.show { display: flex; }
+.banner button { height: 32px; padding: 0 12px; border-radius: 8px; background: var(--paper); border: 1px solid currentColor; color: inherit; font: inherit; cursor: pointer; }
+.banner-warn { background: var(--warn-soft); color: var(--warn); }
+.banner-alert { background: var(--alert-soft); color: var(--alert); }
+
+/* not configured / loading */
+.center-panel { display: flex; justify-content: center; padding: 15vh 16px; }
+.center-card { max-width: 460px; text-align: left; }
+.center-card h2 { font-size: 22px; font-weight: 600; margin: 0 0 10px; }
+.center-card p { color: var(--ink-soft); margin: 0 0 16px; }
+.center-card code { display: block; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.center-card button { margin-top: 16px; height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+
+/* hero: a header row (today's total, then "right now" and the forecast
+   stacked 50/50, then the weather on the far side), an optional note about
+   missing output, and the chart across the full width below. */
+.hero { background: var(--paper); border-radius: 28px; position: relative; overflow: hidden; isolation: isolate; }
+.hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 24px; padding: 32px 40px 28px; }
+@media (max-width: 1099px) { .hero-inner { padding: 28px 32px 24px; gap: 20px; } }
+@media (max-width: 600px) { .hero-inner { padding: 22px 20px 20px; gap: 18px; } }
+@media (max-width: 480px) { .hero-inner { padding: 20px 16px 18px; } }
+.hero-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.hero-figures { display: flex; align-items: stretch; gap: 36px; min-width: 0; }
+.hero-total .num { font-size: var(--fs-live); font-weight: 600; letter-spacing: -0.03em; line-height: 0.92; }
+.hero-total .unit { font-size: var(--fs-live-unit); font-weight: 500; color: var(--ink-soft); margin-left: 8px; letter-spacing: -0.01em; }
+.hero-total .l { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 10px; }
+.hero-total .vs { color: var(--ink-soft); font-size: var(--fs-small); margin-top: 2px; }
+/* Two equal rows beside the total, split by a hairline. */
+.hero-stack { display: grid; grid-template-rows: 1fr 1fr; min-width: 170px; padding-left: 28px; border-left: 1px solid var(--mist); }
+.hero-stack .row { display: flex; flex-direction: column; justify-content: center; }
+.hero-stack .row + .row { border-top: 1px solid var(--mist); }
+.hero-stack .v { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.hero-stack .v .unit { font-size: 16px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+.hero-stack .l { font-size: var(--fs-small); color: var(--ink-soft); margin-top: 2px; }
+/* Weather, on the far side of the header. */
+.hero-weather { display: flex; align-items: center; gap: 22px; flex: none; }
+.hero-weather[hidden] { display: none; }
+.wx-now { display: flex; align-items: center; gap: 10px; }
+.wx-now svg { width: 44px; height: 44px; }
+.wx-now .temp { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.wx-hours { display: flex; gap: 16px; padding-left: 20px; border-left: 1px solid var(--mist); }
+.wx-hour { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: var(--fs-small); }
+.wx-hour .h { color: var(--ink-soft); }
+.wx-hour svg { width: 22px; height: 22px; }
+.wx-hour .temp { font-weight: 600; }
+.wx-icon { color: var(--ink-soft); }
+.wx-icon.sunny { color: var(--sun); }
+/* Tablet: weather drops its hourly strip; phone: the stack goes under the
+   total as two 50/50 columns, weather stays top-right. */
+@media (max-width: 1099px) { .wx-hours { display: none; } }
+@media (max-width: 600px) {
+  .hero-head { flex-wrap: wrap; row-gap: 18px; }
+  .hero-figures { display: contents; }
+  .hero-total { order: 1; flex: 1 1 0; min-width: 0; }
+  .hero-weather { order: 2; }
+  .hero-stack { order: 3; flex: 1 1 100%; grid-template-rows: none; grid-template-columns: 1fr 1fr; padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--mist); }
+  .hero-stack .row + .row { border-top: 0; border-left: 1px solid var(--mist); padding-left: 16px; }
+  .hero-stack .v { font-size: 22px; }
+  .wx-now svg { width: 34px; height: 34px; }
+  .wx-now .temp { font-size: 22px; }
+}
+/* Why the panels aren't making anything, when it isn't just the weather.
+   Translucent so the sky still shows through. */
+.hero-note { display: none; gap: 12px; padding: 14px 16px; border-radius: 16px; font-size: var(--fs-small); line-height: 1.45; color: var(--alert);
+  background: color-mix(in srgb, var(--alert) 13%, transparent); border: 1px solid color-mix(in srgb, var(--alert) 32%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.hero-note.show { display: flex; animation: note-in 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.hero-note svg { flex: none; margin-top: 2px; }
+.hero-note b { display: block; font-size: var(--fs-body); font-weight: 600; margin-bottom: 2px; }
+.hero-note span { color: color-mix(in srgb, var(--alert) 70%, var(--ink)); }
+@keyframes note-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.outage-band { fill: var(--alert); opacity: 0.1; }
+.outage-label { font-size: 11px; fill: var(--alert); font-weight: 600; }
+.hero-sentences p { margin: 4px 0; font-size: 17px; font-weight: 500; }
+.hero-sentences .s-solar { color: var(--leaf-deep); }
+.hero-sentences .s-grid { color: var(--grid); }
+.hero-sentences .s-plum { color: var(--plum); }
+/* The chart, full width. The arc is absolutely positioned inside, so this
+   box carries the height; its bottom PAD_B holds the sunrise/now/sunset row. */
+.hero-right { position: relative; min-width: 0; height: 330px; }
+@media (max-width: 1099px) { .hero-right { height: 280px; } }
+@media (max-width: 480px) { .hero-right { height: 240px; } }
+/* Per-hour legend, top-left of the chart. */
+.chart-legend { position: absolute; left: 0; top: 0; display: none; gap: 14px; font-size: var(--fs-small); color: var(--ink-soft); }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.chart-legend .made { background: var(--leaf); }
+.chart-legend .fc { border: 1.5px dashed var(--leaf); }
+.chart-legend .clear { background: var(--mist); }
+.hero.hourly .chart-legend { display: flex; }
+@media (max-width: 600px) { .hero.hourly .chart-legend { top: 34px; } }
+/* Curve / per-hour switch, top-right of the chart. */
+.view-toggle { position: absolute; right: 0; top: -4px; z-index: 5; display: inline-flex; padding: 2px; border-radius: 999px; background: var(--sky); border: 1px solid var(--mist); }
+.view-toggle button { height: 26px; padding: 0 12px; border-radius: 999px; border: 0; background: transparent; color: var(--ink-soft); font: 500 12px/1 var(--font); cursor: pointer; }
+.view-toggle button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(14, 23, 38, 0.12); }
+.arc-wrap { position: absolute; inset: 0; }
+.arc-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* `top` is set inline by drawArc(), as a percentage matching the SVG's
+   actual horizon line — the one true source of "where the horizon is",
+   shared with .cap-label so nothing has to be hand-tuned per breakpoint. */
+.sun-row { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; font-size: var(--fs-small); padding-top: 10px; }
+.sun-row .stack { display: flex; flex-direction: column; gap: 2px; }
+.sun-row .stack.now { align-items: center; position: absolute; top: 10px; transform: translateX(-50%); }
+.sun-row .stack.sunset { align-items: flex-end; }
+.sun-row .t { color: var(--ink); font-weight: 600; font-size: 15px; }
+.sun-row .w { color: var(--ink-soft); }
+.now-glow { animation: pulse 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes pulse { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .now-glow { animation: none; opacity: 0.9; } }
+.hero.stale .arc-wrap { opacity: 0.55; }
+.hero.stale .now-glow { display: none; }
+.arc-tooltip { position: absolute; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 8px 10px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; z-index: 5; }
+.ghost-label { font-size: 12px; fill: var(--ghost); font-weight: 500; }
+.clear-label { font-size: 12px; fill: var(--ink-soft); font-weight: 500; }
+.fc-label { font-size: 12px; fill: var(--leaf); font-weight: 500; opacity: 0.85; }
+.hour-clear { fill: var(--mist); opacity: 0.45; }
+.hour-fc { fill: none; stroke: var(--leaf); stroke-width: 1.5; stroke-dasharray: 3 3; opacity: 0.8; }
+.hour-actual { fill: var(--leaf); }
+.hour-actual.partial { opacity: 0.55; }
+
+/* Sky backdrop: the hero shows the weather outside, from Open-Meteo's
+   15-minute forecast for this hour. Soft shapes only, behind the content,
+   animating transform/opacity. Sizes use container units so drift and fall
+   distances follow the card. Reduced motion freezes everything in place. */
+.sky-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; container-type: size;
+  /* The sun's centre, measured from the card's top-right corner. placeSun()
+     sets it to the current-weather icon, so the icon reads as the light
+     source; these values are only the fallback. */
+  --sun-w: min(70cqw, 640px); --sun-cx: calc(var(--sun-w) / 2 - 12cqw); --sun-cy: calc(var(--sun-w) / 2 - 38cqh); }
+.sky-fx > * { position: absolute; }
+/* Weather gathers around the weather readout (top right) and fades out
+   before it reaches the headline figures or the chart, so the data always
+   sits on a clean surface. Fog is the exception: it hangs over everything,
+   thinning toward the bottom. */
+.sky-fx { -webkit-mask: radial-gradient(ellipse 70% 95% at 80% 0%, #000 30%, transparent 100%); mask: radial-gradient(ellipse 70% 95% at 80% 0%, #000 30%, transparent 100%); }
+.sky-fx.sky-fog { -webkit-mask: linear-gradient(#000 20%, transparent 95%); mask: linear-gradient(#000 20%, transparent 95%); }
+.sky-fx.night { -webkit-mask: linear-gradient(#000 25%, transparent 80%); mask: linear-gradient(#000 25%, transparent 80%); }
+/* The phone card is tall, so keep the weather to its top third. */
+@media (max-width: 600px) {
+  .sky-fx { -webkit-mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); }
+}
+/* Light falls off on an eased curve (many stops, not two), so there's no
+   visible ring where a linear gradient would end. */
+.fx-sun, .fx-halo { --sun-fade: radial-gradient(closest-side, var(--sun-glow) 0%, color-mix(in srgb, var(--sun-glow) 82%, transparent) 14%, color-mix(in srgb, var(--sun-glow) 62%, transparent) 28%, color-mix(in srgb, var(--sun-glow) 42%, transparent) 42%, color-mix(in srgb, var(--sun-glow) 26%, transparent) 56%, color-mix(in srgb, var(--sun-glow) 14%, transparent) 70%, color-mix(in srgb, var(--sun-glow) 6%, transparent) 84%, transparent 100%); }
+.fx-sun, .fx-halo { right: calc(var(--sun-cx) - var(--sun-w) / 2); top: calc(var(--sun-cy) - var(--sun-w) / 2); width: var(--sun-w); }
+.fx-sun { aspect-ratio: 1; border-radius: 50%; background: var(--sun-fade); animation: sun-breathe 9s ease-in-out infinite alternate; }
+.sky-fair .fx-sun { opacity: 0.8; }
+.sky-cloudy .fx-sun { opacity: 0.55; }
+/* Clear sky adds a wide, faint halo that breathes out of step with the core,
+   so the light swells softly instead of spinning. */
+.fx-halo { aspect-ratio: 1; border-radius: 50%; opacity: 0.5; transform: scale(1.6);
+  background: var(--sun-fade);
+  animation: halo-breathe 13s ease-in-out infinite alternate; }
+/* A still, luminous core right behind the icon. Only the glow and halo
+   breathe, so the sun itself stays put. */
+.fx-disc { right: calc(var(--sun-cx) - 110px); top: calc(var(--sun-cy) - 110px); width: 220px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sun-core) 0%, color-mix(in srgb, var(--sun-core) 82%, transparent) 14%, color-mix(in srgb, var(--sun-core) 62%, transparent) 28%, color-mix(in srgb, var(--sun-core) 42%, transparent) 42%, color-mix(in srgb, var(--sun-core) 26%, transparent) 56%, color-mix(in srgb, var(--sun-core) 14%, transparent) 70%, color-mix(in srgb, var(--sun-core) 6%, transparent) 84%, transparent 100%); }
+/* Night: a faint, cool moonlight on the same spot and curve, no motion. */
+.fx-moon { right: calc(var(--sun-cx) - 200px); top: calc(var(--sun-cy) - 200px); width: 400px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--moon-glow) 0%, color-mix(in srgb, var(--moon-glow) 62%, transparent) 28%, color-mix(in srgb, var(--moon-glow) 26%, transparent) 56%, color-mix(in srgb, var(--moon-glow) 6%, transparent) 84%, transparent 100%); }
+.sky-fair .fx-disc { opacity: 0.7; }
+.sky-cloudy .fx-disc { opacity: 0.4; }
+@keyframes sun-breathe { from { transform: scale(0.94); } to { transform: scale(1.06); } }
+@keyframes halo-breathe { from { opacity: 0.3; transform: scale(1.5); } to { opacity: 0.6; transform: scale(1.7); } }
+.fx-cloud { left: 0; top: var(--top); width: var(--w); height: calc(var(--w) * 0.36); transform: translateX(var(--rest)); animation: cloud-drift var(--dur) linear infinite; animation-delay: var(--delay); filter: blur(10px); }
+.fx-cloud::before, .fx-cloud::after, .fx-cloud i { content: ""; position: absolute; border-radius: 50%; background: var(--cloud); }
+.fx-cloud::before { left: 0; bottom: 0; width: 100%; height: 62%; }
+.fx-cloud::after { left: 18%; bottom: 28%; width: 46%; height: 88%; }
+.fx-cloud i { left: 48%; bottom: 20%; width: 38%; height: 70%; }
+.fx-cloud.heavy::before, .fx-cloud.heavy::after, .fx-cloud.heavy i { background: var(--cloud-heavy); }
+@keyframes cloud-drift { from { transform: translateX(calc(-1 * var(--w))); } to { transform: translateX(100cqw); } }
+.fx-fog { left: -30cqw; width: 160cqw; height: 44cqh; top: var(--top); background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--cloud-heavy), transparent 100%); animation: fog-drift var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
+@keyframes fog-drift { from { transform: translateX(-12cqw); } to { transform: translateX(12cqw); } }
+.fx-drop { top: -40px; left: var(--x); width: 1.5px; height: var(--len); border-radius: 1px; background: linear-gradient(to bottom, transparent, var(--rain)); transform: rotate(12deg); animation: rain-fall var(--dur) linear infinite; animation-delay: var(--delay); }
+@keyframes rain-fall { from { transform: translate3d(0, 0, 0) rotate(12deg); } to { transform: translate3d(-22cqh, calc(100cqh + 80px), 0) rotate(12deg); } }
+.fx-flash { inset: 0; opacity: 0; background: radial-gradient(ellipse 70% 60% at 72% 0%, var(--flash), transparent 70%); animation: storm-flash 13s ease-out infinite; animation-delay: 4s; }
+/* One soft flash every 13 s, never a strobe. */
+@keyframes storm-flash { 0%, 90% { opacity: 0; } 91% { opacity: 0.9; } 97%, 100% { opacity: 0; } }
+.fx-star { left: var(--x); top: var(--y); width: var(--s); height: var(--s); border-radius: 50%; background: var(--star); animation: twinkle var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
+@keyframes twinkle { from { opacity: 0.15; } to { opacity: 1; } }
+.hero.stale .sky-fx > * { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .sky-fx > * { animation: none !important; }
+  .fx-drop, .fx-flash { display: none; }
+}
+
+/* rail sections */
+.section-row { display: grid; grid-template-columns: var(--rail) 1fr; gap: 24px; margin-top: var(--gap); align-items: start; }
+@media (max-width: 1099px) { .section-row { display: block; margin-top: var(--gap); } }
+.section-head { font-size: var(--fs-head); font-weight: 600; margin: 0 0 4px; }
+@media (max-width: 1099px) { .section-head { margin-bottom: 16px; } }
+.section-note { font-size: var(--fs-body); color: var(--ink-soft); }
+
+/* today ledger */
+.ledger { display: flex; gap: 32px; }
+@media (max-width: 600px) { .ledger { flex-wrap: wrap; gap: 20px 24px; } }
+@media (max-width: 480px) { .ledger { gap: 20px 16px; } }
+.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 0; }
+@media (max-width: 480px) { .ledger .cell { flex: 1 1 40%; } }
+.ledger .cell .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.ledger-icon { width: 26px; height: 26px; margin-right: 8px; vertical-align: -3px; }
+.ledger .cell .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+.ledger .cell .label { font-size: var(--fs-body); line-height: 1.35; color: var(--ink-soft); margin-top: 6px; text-wrap: pretty; }
+
+/* month body: calendar + stats column */
+/* Grid, not flex: the chart/calendar column is `max-content` (its own
+   natural width) and the stats column takes the rest as `1fr` — this can
+   never wrap the stats below the chart the way flex + gap arithmetic could
+   (a fixed-width chart plus its gap plus the stats' natural width came
+   within ~10px of the row's available width, so flex-wrap kicked in). */
+.month-body, .year-body { display: grid; grid-template-columns: max-content 1fr; gap: 56px; align-items: start; }
+@media (max-width: 1099px) { .month-body, .year-body { grid-template-columns: 1fr; } }
+.stats-col { display: flex; flex-direction: column; gap: 24px; padding-top: 8px; min-width: 0; }
+@media (max-width: 1099px) { .stats-col { padding-top: 20px; flex-direction: row; flex-wrap: wrap; gap: 24px 40px; } }
+.stat .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.stat .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+.stat .label { font-size: var(--fs-body); color: var(--ink-soft); margin-top: 2px; }
+
+/* calendar */
+.weekdays { display: flex; gap: 8px; margin-bottom: 8px; }
+.weekdays span { width: 76px; font-size: var(--fs-small); color: var(--ink-soft); padding-left: 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 76px); gap: 8px; }
+.cal-day { width: 76px; height: 64px; border-radius: 8px; display: flex; flex-direction: column; justify-content: space-between; padding: 8px 10px; font-size: var(--fs-small); color: var(--cal-text); position: relative; cursor: default; }
+.cal-day .d { font-size: var(--fs-small); }
+.cal-day .v { font-size: 15px; font-weight: 600; }
+.cal-day.empty-mist { outline: 1px solid var(--mist); outline-offset: -0.5px; }
+.cal-day.today { outline: 2px solid var(--ink); outline-offset: -1px; }
+.cal-day.today .d { font-weight: 600; }
+.cal-day.not-installed .d { color: var(--mist-strong); }
+@media (max-width: 1099px) {
+  .cal-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .weekdays { gap: 6px; }
+  .weekdays span { width: auto; flex: 1 1 0; padding-left: 4px; text-align: left; }
+  .cal-day { width: auto; height: auto; aspect-ratio: 1; padding: 6px 8px; }
+}
+
+/* year strip */
+/* min-width: 0 overrides the grid item default of min-width: auto (=
+   min-content) — without it, a grid item can't shrink below its content's
+   intrinsic width even when the track is narrower, which is exactly what
+   overflowed the card's right edge at 375px (year-chart wanted ~365px
+   in a 343px track). */
+.year-chart { width: 100%; max-width: 580px; min-width: 0; }
+.year-bars { display: flex; align-items: flex-end; gap: 8px; height: 170px; position: relative; }
+.not-installed-note { position: absolute; left: 0; bottom: 8px; font-size: var(--fs-small); color: var(--ink-soft); white-space: nowrap; pointer-events: none; }
+@media (max-width: 480px) { .year-bars { height: 120px; } }
+.year-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
+.year-col .val { font-size: 13px; font-weight: 600; color: var(--ink); }
+.year-bar { width: 22px; max-width: 60%; background: var(--leaf); border-radius: 5px 5px 0 0; }
+.year-bar.dash { width: 14px; height: 2px; background: var(--mist-strong); border-radius: 1px; }
+.year-baseline { height: 1px; background: var(--mist); }
+.year-labels { display: flex; gap: 8px; padding-top: 8px; }
+.year-labels span { flex: 1 1 0; text-align: center; font-size: var(--fs-small); color: var(--ink-soft); }
+.year-labels span.current { color: var(--ink); font-weight: 600; }
+
+/* System: current state is a headline above the log, the table holds only
+   the log, and fixed metadata recedes into a footer. */
+@media (min-width: 1100px) {
+  .system-row { display: block; }
+  .system-row .section-head { margin-bottom: 16px; }
+}
+.sys-body { min-width: 0; }
+.sys-status { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 20px; }
+.sys-status .headline { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.sys-status .dot { width: 10px; height: 10px; }
+.sys-status .detail { color: var(--ink-soft); }
+.sys-status.alert .headline { color: var(--alert); }
+.sys-status.alert .dot { background: var(--alert); }
+.sys-status.rest .dot { background: transparent; border: 1.5px solid var(--ink-soft); }
+.sys-log-head { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.sys-table-wrap { overflow-x: auto; border-top: 1px solid var(--mist); border-bottom: 1px solid var(--mist); }
+.sys-table { width: 100%; min-width: 620px; border-collapse: collapse; table-layout: fixed; }
+.sys-table col.when { width: 170px; }
+.sys-table col.event { width: 210px; }
+.sys-table thead th { padding: 8px 12px 8px 0; text-align: left; color: var(--ink-soft); font-size: 12px; font-weight: 500; }
+.sys-table td { padding: 12px 12px 12px 0; vertical-align: top; border-top: 1px solid var(--mist); }
+.sys-table .when { font-size: var(--fs-small); }
+.sys-table .when strong { display: block; color: var(--ink); font-weight: 600; }
+.sys-table .when span { display: block; color: var(--ink-soft); }
+.sys-table .event { display: flex; align-items: flex-start; gap: 9px; font-weight: 600; }
+.sys-table .event .log-icon { flex: none; margin-top: 2px; color: var(--ink-soft); }
+.sys-table tr.power_cut .log-icon, .sys-table tr.alarm .log-icon { color: var(--alert); }
+.sys-table tr.ongoing .event { color: var(--alert); }
+.sys-table .detail { color: var(--ink-soft); }
+.sys-table .empty { color: var(--ink-soft); }
+.sys-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin-top: 18px; font-size: 12px; }
+.sys-meta-item { display: inline-flex; align-items: baseline; gap: 6px; }
+.sys-meta .k { color: var(--ink-soft); }
+.sys-meta .v { color: var(--ink); font-size: var(--fs-small); font-weight: 500; }
+.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
+@media (max-width: 600px) {
+  .sys-table { min-width: 560px; }
+  .sys-table col.when { width: 125px; }
+  .sys-table col.event { width: 155px; }
+}
+/* Day-detail logs keep the compact stacked list treatment. */
+.log-list { list-style: none; margin: 0; padding: 0; }
+.log-row { display: grid; grid-template-columns: 150px 20px 1fr; gap: 4px 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--mist); }
+.log-when { display: flex; flex-direction: column; font-size: var(--fs-small); }
+.log-when .d { font-weight: 600; }
+.log-when .t { color: var(--ink-soft); }
+.log-icon { margin-top: 2px; color: var(--ink-soft); }
+.log-row.power_cut .log-icon, .log-row.alarm .log-icon { color: var(--alert); }
+.log-what b { display: block; font-weight: 600; }
+.log-what span { color: var(--ink-soft); }
+.log-row.ongoing .log-what b { color: var(--alert); }
+@media (max-width: 480px) { .log-row { grid-template-columns: 20px 1fr; } .log-when { grid-column: 1 / -1; flex-direction: row; gap: 8px; } }
+/* month navigation + clickable days/bars */
+.month-rail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+@media (max-width: 1099px) { .month-rail { margin-bottom: 16px; } .month-rail .section-head { margin-bottom: 0; } }
+.month-nav { display: flex; gap: 8px; flex: none; }
+.icon-btn { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; flex: none; }
+.icon-btn:hover:not(:disabled) { border-color: var(--mist-strong); }
+.icon-btn:disabled { opacity: 0.35; cursor: default; }
+.icon-btn svg { width: 16px; height: 16px; }
+.month-body.loading { opacity: 0.45; transition: opacity 0.2s; }
+.month-error { font-size: var(--fs-body); color: var(--ink-soft); }
+.month-error button { margin-left: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.cal-day[data-date] { cursor: pointer; transition: box-shadow 0.12s; }
+.cal-day[data-date]:hover { box-shadow: 0 0 0 2px var(--leaf-deep) inset; }
+.cal-day.selected { box-shadow: 0 0 0 2px var(--leaf-deep) inset; }
+.year-col[data-ym] { cursor: pointer; }
+.year-col[data-ym]:hover .year-bar { filter: brightness(1.12); }
+.year-col.viewing .year-bar { box-shadow: 0 0 0 2px var(--leaf-deep); }
+.year-labels span.viewing { color: var(--leaf-deep); font-weight: 600; }
+
+/* day detail dialog */
+.day-dialog { border: none; padding: 0; background: transparent; color: var(--ink); max-width: none; max-height: none; width: min(760px, calc(100vw - 32px)); overflow: visible; }
+.day-dialog::backdrop { background: rgba(14, 23, 38, 0.45); }
+.day-card { max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
+.day-top { display: flex; align-items: center; gap: 8px; }
+.day-top h2 { font-size: var(--fs-head); font-weight: 600; margin: 0; flex: 1 1 auto; min-width: 0; }
+.day-top .sub { display: block; font-size: var(--fs-small); color: var(--ink-soft); font-weight: 400; margin-top: 2px; }
+.day-stats { display: flex; gap: 32px; margin: 20px 0 8px; flex-wrap: wrap; }
+.day-stats .stat { border-top: 1px solid var(--mist); padding-top: 10px; flex: 1 1 0; min-width: 110px; }
+.day-stats .figure { font-size: 26px; }
+.day-chart { position: relative; height: 260px; margin-top: 12px; }
+.day-chart svg { width: 100%; height: 100%; display: block; overflow: visible; touch-action: pan-y; }
+.day-chart .axis { font-size: 12px; fill: var(--ink-soft); }
+.day-chart .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ink-soft); font-size: var(--fs-body); text-align: center; }
+.day-chart .msg button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.day-log { margin-top: 18px; }
+.day-log .log-row { grid-template-columns: 130px 20px 1fr; }
+@media (max-width: 480px) { .day-log .log-row { grid-template-columns: 20px 1fr; } }
+.day-tip { position: absolute; top: 0; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; }
+@media (max-width: 600px) {
+  .day-dialog { width: 100vw; margin: auto 0 0; }
+  .day-card { border-radius: 24px 24px 0 0; padding: 20px 16px calc(24px + env(safe-area-inset-bottom)); }
+  .day-stats { gap: 16px; }
+  .day-stats .stat { min-width: 90px; }
+  .day-stats .figure { font-size: 22px; }
+  .day-chart { height: 210px; }
+}
+
+.tooltip { position: absolute; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 8px 10px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; z-index: 6; }
+</style>
+</head>
+<body>
+<noscript>This dashboard needs JavaScript.</noscript>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-alert" viewBox="0 0 20 20"><path d="M10 2.5 18 17H2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><line x1="10" y1="8" x2="10" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="10" cy="14.6" r="0.9" fill="currentColor"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M10 5v5l3 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <!-- Weather icons: Phosphor Icons (duotone), MIT licence, phosphoricons.com -->
+  <symbol id="w-sun" viewBox="0 0 256 256" fill="currentColor"><path d="M184,128a56,56,0,1,1-56-56A56,56,0,0,1,184,128Z" opacity="0.2"/><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></symbol>
+  <symbol id="w-cloud-sun" viewBox="0 0 256 256" fill="currentColor"><path d="M139.84,84.41v0a68.22,68.22,0,0,0-41.65,46v-.11a44.08,44.08,0,0,0-38.54,5h0a48,48,0,1,1,80.19-50.94Z" opacity="0.2"/><path d="M164,72a76.2,76.2,0,0,0-20.26,2.73,55.63,55.63,0,0,0-9.41-11.54l9.51-13.57a8,8,0,1,0-13.11-9.18L121.22,54A55.9,55.9,0,0,0,96,48c-.58,0-1.16,0-1.74,0L91.37,31.71a8,8,0,1,0-15.75,2.77L78.5,50.82A56.1,56.1,0,0,0,55.23,65.67L41.61,56.14a8,8,0,1,0-9.17,13.11L46,78.77A55.55,55.55,0,0,0,40,104c0,.57,0,1.15,0,1.72L23.71,108.6a8,8,0,0,0,1.38,15.88,8.24,8.24,0,0,0,1.39-.12l16.32-2.88a55.74,55.74,0,0,0,5.86,12.42A52,52,0,0,0,84,224h80a76,76,0,0,0,0-152ZM56,104a40,40,0,0,1,72.54-23.24,76.26,76.26,0,0,0-35.62,40,52.14,52.14,0,0,0-31,4.17A40,40,0,0,1,56,104ZM164,208H84a36,36,0,1,1,4.78-71.69c-.37,2.37-.63,4.79-.77,7.23a8,8,0,0,0,16,.92,58.91,58.91,0,0,1,1.88-11.81c0-.16.09-.32.12-.48A60.06,60.06,0,1,1,164,208Z"/></symbol>
+  <symbol id="w-cloud" viewBox="0 0 256 256" fill="currentColor"><path d="M240,128a80,80,0,0,1-80,80H72A56,56,0,1,1,85.92,97.74l0,.1A80,80,0,0,1,240,128Z" opacity="0.2"/><path d="M160,40A88.09,88.09,0,0,0,81.29,88.67,64,64,0,1,0,72,216h88a88,88,0,0,0,0-176Zm0,160H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.11A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,72,72Z"/></symbol>
+  <symbol id="w-cloud-fog" viewBox="0 0 256 256" fill="currentColor"><path d="M224,100a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,82.34v.11A68.06,68.06,0,0,1,224,100Z" opacity="0.2"/><path d="M120,208H72a8,8,0,0,1,0-16h48a8,8,0,0,1,0,16Zm64-16H160a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Zm-24,32H104a8,8,0,0,0,0,16h56a8,8,0,0,0,0-16Zm72-124a76.08,76.08,0,0,1-76,76H76A52,52,0,0,1,76,72a53.26,53.26,0,0,1,8.92.76A76.08,76.08,0,0,1,232,100Zm-16,0A60.06,60.06,0,0,0,96,96.46a8,8,0,0,1-16-.92q.21-3.66.77-7.23A38.11,38.11,0,0,0,76,88a36,36,0,0,0,0,72h80A60.07,60.07,0,0,0,216,100Z"/></symbol>
+  <symbol id="w-cloud-rain" viewBox="0 0 256 256" fill="currentColor"><path d="M224,92a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,74.34v.11A68.06,68.06,0,0,1,224,92Z" opacity="0.2"/><path d="M158.66,196.44l-32,48a8,8,0,1,1-13.32-8.88l32-48a8,8,0,0,1,13.32,8.88ZM232,92a76.08,76.08,0,0,1-76,76H132.28l-29.62,44.44a8,8,0,1,1-13.32-8.88L113.05,168H76A52,52,0,0,1,76,64a53.26,53.26,0,0,1,8.92.76A76.08,76.08,0,0,1,232,92Zm-16,0A60.06,60.06,0,0,0,96,88.46a8,8,0,0,1-16-.92q.21-3.66.77-7.23A38.11,38.11,0,0,0,76,80a36,36,0,0,0,0,72h80A60.07,60.07,0,0,0,216,92Z"/></symbol>
+  <symbol id="w-cloud-lightning" viewBox="0 0 256 256" fill="currentColor"><path d="M224,92a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,74.34v.11A68.06,68.06,0,0,1,224,92Z" opacity="0.2"/><path d="M156,16A76.2,76.2,0,0,0,84.92,64.76,53.26,53.26,0,0,0,76,64a52,52,0,0,0,0,104h37.87L97.14,195.88A8,8,0,0,0,104,208h25.87l-16.73,27.88a8,8,0,0,0,13.72,8.24l24-40A8,8,0,0,0,144,192H118.13l14.4-24H156a76,76,0,0,0,0-152Zm0,136H76a36,36,0,0,1,0-72,38.11,38.11,0,0,1,4.78.31q-.56,3.57-.77,7.23a8,8,0,0,0,16,.92A60.06,60.06,0,1,1,156,152Z"/></symbol>
+  <symbol id="w-moon-stars" viewBox="0 0 256 256" fill="currentColor"><path d="M210.69,158.18A88,88,0,1,1,97.82,45.31,96.08,96.08,0,0,0,192,160,96.78,96.78,0,0,0,210.69,158.18Z" opacity="0.2"/><path d="M240,96a8,8,0,0,1-8,8H216v16a8,8,0,0,1-16,0V104H184a8,8,0,0,1,0-16h16V72a8,8,0,0,1,16,0V88h16A8,8,0,0,1,240,96ZM144,56h8v8a8,8,0,0,0,16,0V56h8a8,8,0,0,0,0-16h-8V32a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16Zm72.77,97a8,8,0,0,1,1.43,8A96,96,0,1,1,95.07,37.8a8,8,0,0,1,10.6,9.06A88.07,88.07,0,0,0,209.14,150.33,8,8,0,0,1,216.77,153Zm-19.39,14.88c-1.79.09-3.59.14-5.38.14A104.11,104.11,0,0,1,88,64c0-1.79,0-3.59.14-5.38A80,80,0,1,0,197.38,167.86Z"/></symbol>
+  <symbol id="w-cloud-moon" viewBox="0 0 256 256" fill="currentColor"><path d="M106.31,130.38ZM102.38,17.62h0A64.06,64.06,0,0,1,25.62,94.38h0A64.12,64.12,0,0,0,63,138.93h0a44.08,44.08,0,0,1,43.33-8.54,68.13,68.13,0,0,1,45.47-47.32l.15,0c0-1,.07-2,.07-3A64,64,0,0,0,102.38,17.62Z" opacity="0.2"/><path d="M172,72a76.45,76.45,0,0,0-12.36,1A71.93,71.93,0,0,0,104.17,9.83a8,8,0,0,0-9.59,9.58A56.05,56.05,0,0,1,40,88a56.45,56.45,0,0,1-12.59-1.42,8,8,0,0,0-9.59,9.59,72.22,72.22,0,0,0,32.29,45.06A52,52,0,0,0,92,224h80a76,76,0,0,0,0-152ZM37.37,104c.87,0,1.75,0,2.63,0a72.08,72.08,0,0,0,72-72c0-.89,0-1.78,0-2.67a55.63,55.63,0,0,1,32,48,76.28,76.28,0,0,0-43,43.4A52,52,0,0,0,62,129.59,56.22,56.22,0,0,1,37.37,104ZM172,208H92a36,36,0,1,1,4.78-71.69c-.37,2.37-.63,4.79-.77,7.23a8,8,0,0,0,16,.92,58.91,58.91,0,0,1,1.88-11.81c0-.16.09-.32.12-.48A60.06,60.06,0,1,1,172,208Z"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="app-header">
+    <h1 id="plant-name">Home</h1>
+    <div class="status-line" id="status-line"><span class="dot hollow" id="status-dot"></span><span id="status-text">Connecting…</span></div>
+  </header>
+
+  <div class="banner banner-alert" id="banner-auth"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><span>WAAREE didn't accept the saved login. Run scripts/set-secrets.sh to update it.</span></div>
+  <div class="banner banner-alert" id="banner-api"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><span id="api-msg">Can't reach WAAREE right now.</span><button id="retry-api">Retry now</button></div>
+  <div class="banner banner-warn" id="banner-stale"><svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-clock"/></svg><span id="stale-msg">These figures are out of date.</span><button id="retry-stale">Retry now</button></div>
+
+  <div id="app-body">
+    <main id="main-content" style="display:none">
+      <section class="hero" id="hero" aria-label="Today's sun">
+        <div class="sky-fx" id="sky-fx" aria-hidden="true"></div>
+        <div class="hero-inner">
+          <div class="hero-head">
+            <div class="hero-figures" id="hero-live-wrap">
+              <div class="hero-total">
+                <div><span class="num" id="v-total">–</span></div>
+                <div class="l" id="hero-total-label">so far today</div>
+                <div class="vs" id="hero-sub-yesterday"></div>
+              </div>
+              <div class="hero-stack">
+                <div class="row"><div class="v" id="v-solar">–</div><div class="l" id="hero-sub-mode">right now</div></div>
+                <div class="row"><div class="v" id="v-forecast">–</div><div class="l" id="hero-fc-label">expected by sunset</div></div>
+              </div>
+            </div>
+            <div class="hero-sentences" id="hero-sentences" style="display:none"></div>
+            <div class="hero-weather" id="hero-weather" hidden></div>
+          </div>
+          <div class="hero-note" id="hero-note" role="status"></div>
+          <div class="hero-right">
+            <div class="chart-legend" aria-hidden="true"><span><i class="made"></i>made</span><span><i class="fc"></i>forecast</span><span><i class="clear"></i>clear sky</span></div>
+            <div class="view-toggle" id="view-toggle" role="group" aria-label="Chart view" style="display:none">
+              <button type="button" data-view="curve" aria-pressed="true">Power</button>
+              <button type="button" data-view="hourly" aria-pressed="false">By hour</button>
+            </div>
+            <div class="arc-wrap" id="arc-wrap">
+              <svg id="arc-svg" viewBox="0 0 1000 400" role="img" tabindex="0" aria-label="Today's output from sunrise to sunset, with the weather forecast and a clear-sky day for comparison">
+                <defs>
+                  <linearGradient id="arc-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/>
+                    <stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
+                  </linearGradient>
+                </defs>
+                <line id="horizon-line" x1="0" y1="340" x2="1000" y2="340" stroke="var(--mist)" stroke-width="1.5"/>
+                <g id="outage-bands"></g>
+                <g id="hour-bars"></g>
+                <path id="clear-path" fill="none" stroke="var(--mist-strong)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 6"></path>
+                <text id="clear-label" class="clear-label" x="0" y="0" text-anchor="middle">clear sky</text>
+                <path id="ghost-path" fill="none" stroke="var(--ghost)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="2 9"></path>
+                <text id="ghost-label" class="ghost-label" x="0" y="0" text-anchor="middle">yesterday</text>
+                <path id="fc-path" fill="none" stroke="var(--leaf)" stroke-width="2" stroke-linecap="round" stroke-dasharray="6 6" stroke-opacity="0.7"></path>
+                <text id="fc-label" class="fc-label" x="0" y="0" text-anchor="middle">forecast</text>
+                <path id="arc-fill-path" fill="url(#arc-fill)" stroke="none"></path>
+                <path id="arc-line-path" fill="none" stroke="var(--leaf)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <circle id="now-glow" class="now-glow" r="10" fill="var(--leaf)" opacity="0.5"></circle>
+                <circle id="now-dot" r="7" fill="var(--leaf)" stroke="var(--paper)" stroke-width="2.5"></circle>
+              </svg>
+              <div class="arc-tooltip" id="arc-tooltip"></div>
+            </div>
+            <div class="sun-row">
+              <div class="stack sunrise"><span class="t" id="sunrise-label">–</span><span class="w">sunrise</span></div>
+              <div class="stack now" id="now-label-wrap"><span class="t" id="now-label">–</span><span class="w">now</span></div>
+              <div class="stack sunset"><span class="t" id="sunset-label">–</span><span class="w" id="sunset-sub">sunset</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="visually-hidden" aria-live="polite" id="live-summary"></div>
+
+      <div class="section-row">
+        <div><h2 class="section-head">Today</h2><div class="section-note" id="today-note"></div></div>
+        <div class="ledger" id="ledger"></div>
+      </div>
+
+      <div class="section-row" id="month-rail-anchor">
+        <div class="month-rail">
+          <h2 class="section-head" id="month-head">September</h2>
+          <div class="month-nav">
+            <button class="icon-btn" id="month-prev" aria-label="Previous month"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="month-next" aria-label="Next month"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+        <div class="month-body" id="month-body">
+          <div>
+            <div class="weekdays"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+            <div class="cal-grid" id="cal-grid" aria-label="Output each day. Choose a day to see its curve."></div>
+          </div>
+          <div class="stats-col" id="month-stats"></div>
+        </div>
+      </div>
+
+      <div class="section-row">
+        <h2 class="section-head" id="year-head">2026</h2>
+        <div class="year-body">
+          <div class="year-chart">
+            <div class="year-bars" id="year-bars"></div>
+            <div class="year-baseline"></div>
+            <div class="year-labels" id="year-labels"></div>
+          </div>
+          <div class="stats-col" id="year-stats"></div>
+        </div>
+      </div>
+
+      <div class="section-row system-row">
+        <h2 class="section-head">System</h2>
+        <div class="sys-body" id="sys-body"></div>
+      </div>
+      <div class="tooltip" id="cal-tooltip"></div>
+      <dialog class="day-dialog" id="day-dialog" aria-labelledby="day-title">
+        <div class="day-card">
+          <div class="day-top">
+            <h2 id="day-title">–</h2>
+            <button class="icon-btn" id="day-prev" aria-label="Previous day"><svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="day-next" aria-label="Next day"><svg viewBox="0 0 16 16"><path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button class="icon-btn" id="day-close" aria-label="Close"><svg viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="day-stats" id="day-stats"></div>
+          <div class="day-chart" id="day-chart">
+            <svg id="day-svg" role="img" aria-label="Output through the chosen day"></svg>
+            <div class="day-tip" id="day-tip"></div>
+            <div class="msg" id="day-msg" style="display:none"></div>
+          </div>
+          <div class="day-log" id="day-log"></div>
+        </div>
+      </dialog>
+    </main>
+
+    <div class="center-panel" id="unconfigured-view" style="display:none">
+      <div class="center-card">
+        <h2>Finish setup</h2>
+        <p>Add your WAAREE sign-in as Cloudflare secrets by running this from the project folder, then reload.</p>
+        <code>scripts/set-secrets.sh</code>
+        <button id="reload-btn">Reload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./demo-data.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const fmtIN = (d) => new Intl.NumberFormat('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEKDAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+function fmtPower(w) {
+  w = Math.max(0, w || 0);
+  const kw = w / 1000;
+  if (w < 30) return { text: '0', unit: 'kW' };
+  if (kw < 10) return { text: fmtIN(2).format(kw), unit: 'kW' };
+  if (kw < 100) return { text: fmtIN(1).format(kw), unit: 'kW' };
+  return { text: fmtIN(0).format(kw), unit: 'kW' };
+}
+function fmtEnergy(wh) {
+  // Design rule (confirmed against v3-desktop.png): under 100 kWh keeps one
+  // decimal ("18.9"), 100 kWh and above rounds to a whole number ("335",
+  // "968") — not the finer-grained "334.5"/"968.0" a naive <1000 bucket
+  // would produce.
+  wh = Math.max(0, wh || 0);
+  const kwh = wh / 1000;
+  if (kwh < 100) return { text: fmtIN(1).format(kwh), unit: 'kWh' };
+  if (kwh < 10000) return { text: fmtIN(0).format(kwh), unit: 'kWh' };
+  return { text: fmtIN(1).format(kwh / 1000), unit: 'MWh' };
+}
+function fmtCurrency(v) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v || 0);
+}
+// For a per-unit tariff like ₹4.5, the 0-decimal formatter above would round
+// to ₹5 — the ledger's "at ₹4.5 a unit" caption needs the fractional rupee.
+function fmtCurrencyPrecise(v) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(v || 0);
+}
+function html(v) { return v.unit ? `${v.text}<span class="unit">${v.unit === '%' ? '' : ' '}${v.unit}</span>` : v.text; }
+function to12h(hm) {
+  if (!hm) return '–';
+  const [h, m] = hm.split(':').map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
+function hhmmToMin(hm) { const [h, m] = (hm || '0:0').split(':').map(Number); return h * 60 + m; }
+// The plant is always Asia/Kolkata regardless of the viewer's own timezone.
+// "now" is derived from the server's own clock (`state.server_now`, real
+// wall time live or a pinned WAAREE_DASH_NOW in mock mode) rather than the
+// browser's, so a fixture can pin the whole UI — day/night, the arc's
+// now-marker, "today" in the calendar — to one exact moment. The result is
+// read back with the UTC getters as a +5:30 shift, same trick `updated_at`
+// already relies on.
+function istNow() {
+  const base = (state && state.server_now) ? new Date(state.server_now).getTime() : Date.now();
+  return new Date(base + 330 * 60000);
+}
+function fmtDateLong(iso, withYear) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return withYear ? `${d} ${MONTH_FULL[m - 1]} ${y}` : `${d} ${MONTH_FULL[m - 1]}`;
+}
+
+let state = null;
+let lastGoodState = null;
+
+async function poll() {
+  let fresh;
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    if (!res.ok) throw new Error('http ' + res.status);
+    fresh = await res.json();
+  } catch (e) {
+    // Only a failed fetch means we can't reach the router/WAAREE.
+    if (lastGoodState) {
+      state = lastGoodState;
+      safeRender();
+      $('api-msg').textContent = "Can't reach the dashboard. You may be offline.";
+      $('banner-api').classList.add('show');
+    }
+    return;
+  }
+  state = lastGoodState = fresh;
+  hideBanner('banner-api');
+  safeRender();
+  if (dayDate && dayDate === todayIso()) renderDay();
+}
+function safeRender() {
+  try { render(); } catch (e) { console.error('render failed', e); }
+}
+function hideBanner(id) { $(id).classList.remove('show'); }
+
+function relTime(sec) {
+  if (sec < 60) return `${Math.round(sec)} s ago`;
+  if (sec < 3600) return `${Math.round(sec / 60)} min ago`;
+  const d = new Date(Date.now() - sec * 1000);
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+}
+
+function render() {
+  if (!state) return;
+  if (state.status === 'unconfigured') {
+    $('main-content').style.display = 'none';
+    $('unconfigured-view').style.display = '';
+    $('status-line').style.display = 'none';
+    $('plant-name').textContent = 'Solar';
+    ['banner-auth', 'banner-api', 'banner-stale'].forEach(hideBanner);
+    return;
+  }
+  $('unconfigured-view').style.display = 'none';
+  $('main-content').style.display = '';
+  $('status-line').style.display = '';
+  $('plant-name').textContent = state.plant.name || 'Home';
+  document.title = `${fmtPower(state.live.solar_w).text} kW · Solar`;
+
+  ['banner-auth', 'banner-api', 'banner-stale'].forEach(hideBanner);
+  const ageSec = (Date.now() - new Date(state.live.updated_at).getTime()) / 1000;
+  // The worker polls every 5 minutes, so figures up to ~5.5 min old are
+  // normal. Only call them stale once a whole poll has been missed.
+  const isStale = state.status === 'stale' || (state.status === 'ok' && ageSec > STALE_SEC);
+
+  if (state.status === 'auth_failed') $('banner-auth').classList.add('show');
+  else if (state.status === 'api_error') { $('api-msg').textContent = "WAAREE isn't responding right now. We'll keep trying."; $('banner-api').classList.add('show'); }
+  else if (isStale) {
+    $('banner-stale').classList.add('show');
+    const t = new Date(state.live.updated_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+    $('stale-msg').textContent = `Couldn't get new figures from WAAREE since ${t}. The dashboard keeps trying every 5 minutes.`;
+  }
+
+  const dotEl = $('status-dot'), textEl = $('status-text');
+  if (isStale) { dotEl.className = 'dot hollow'; textEl.textContent = `Last updated ${relTime(ageSec)}`; }
+  else { dotEl.className = 'dot live'; textEl.textContent = `Live, updated ${relTime(ageSec)}`; }
+
+  $('hero').classList.toggle('stale', isStale);
+
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
+  const isNight = nowMin < sunriseMin || nowMin > sunsetMin;
+
+  diag = diagnose(isNight, isStale);
+  renderHero(isNight);
+  renderLedger(isNight);
+  renderCalendar();
+  renderYear();
+  renderSystem(isNight);
+}
+const STALE_SEC = 11 * 60;
+let diag = null; // why the panels aren't producing, when it isn't the weather
+
+// ---- outages and the system log ----
+// The worker keeps a log (state.events, newest first) of power cuts,
+// inverter drop-outs and WAAREE alarms; see src/events.ts for how cuts are
+// inferred. Today's cuts shade the chart, and one still going on explains
+// the missing output at the top of the page.
+function hmOf(min) { return `${pad2(Math.floor(min / 60) % 24)}:${pad2(Math.round(min % 60))}`; }
+function todayOutages() {
+  const today = todayIso();
+  return (state.events || []).filter(e => e.date === today && e.kind !== 'alarm' && e.to)
+    .map(e => ({ kind: e.kind, from: hhmmToMin(e.from), to: hhmmToMin(e.to), ongoing: e.ongoing, lostWh: e.lost_wh }));
+}
+function diagnose(isNight, isStale) {
+  if (isNight || isStale) return null;
+  const d = (state.devices || [])[0];
+  const alarms = (state.events || []).filter(e => e.kind === 'alarm' && e.date === todayIso());
+  if (d && d.status === 2) {
+    return { kind: 'fault', title: 'The inverter is reporting a fault.',
+      detail: alarms.length && alarms[0].detail ? `WAAREE says: ${alarms[0].detail}.` : "Check the inverter's display for an error code." };
+  }
+  const cur = todayOutages().find(sp => sp.ongoing);
+  if (!cur) return null;
+  const since = to12h(hmOf(cur.from));
+  if (cur.kind === 'no_data' || (d && d.status === 3)) {
+    return { kind: 'offline', title: `No word from the inverter since ${since}.`,
+      detail: 'WAAREE itself is answering, so the problem is at home. The inverter may have lost power, or its Wi-Fi may be down.' };
+  }
+  const alarm = alarms.find(a => hhmmToMin(a.from) >= cur.from - 30);
+  if (alarm && alarm.detail) return { kind: 'fault', title: `Stopped at ${since}, with an alarm.`, detail: `WAAREE says: ${alarm.detail}.` };
+  const fc = forecastToday();
+  let expKw = null;
+  if (fc) for (const p of fc.series) if (hhmmToMin(p.t) <= cur.to + 8) expKw = p.expected_w / 1000;
+  return { kind: 'outage',
+    title: expKw != null && expKw >= 0.1 ? `No output since ${since}, with about ${fmtIN(1).format(expKw)} kW of sun to use.` : `No output since ${since}.`,
+    detail: "The inverter is still online, so this is most likely a power cut. Grid-tied inverters switch off when the mains goes down, and start again a few minutes after it's back." };
+}
+
+// ---- sky backdrop ----
+// Conditions for this hour from Open-Meteo's forecast. `?sky=<kind>` forces
+// one, for checking each look.
+const SKY_KINDS = ['clear', 'fair', 'cloudy', 'overcast', 'fog', 'drizzle', 'rain', 'storm'];
+const SKY_FORCED = (() => { try { const k = new URLSearchParams(location.search).get('sky'); return SKY_KINDS.includes(k) ? k : null; } catch (e) { return null; } })();
+function skyKind(code, cloud) {
+  if (code >= 95) return 'storm';
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+  if (code >= 51 && code <= 57) return 'drizzle';
+  if (code === 45 || code === 48) return 'fog';
+  if (code === 3 || cloud >= 85) return 'overcast';
+  if (code === 2 || cloud >= 45) return 'cloudy';
+  if (code === 1 || cloud >= 15) return 'fair';
+  return 'clear';
+}
+function skyNow() {
+  if (SKY_FORCED) return { kind: SKY_FORCED, cloud: null };
+  const f = state.forecast;
+  const day = f && f.today && f.today.date === todayIso() ? f.today : null;
+  if (!day) return null;
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  let pt = null;
+  for (const p of day.sky || []) if (!pt || Math.abs(hhmmToMin(p.t) - nowMin) < Math.abs(hhmmToMin(pt.t) - nowMin)) pt = p;
+  const code = pt ? pt.code : day.weather_code;
+  const cloud = pt ? pt.cloud : day.cloud_pct;
+  if (code == null && cloud == null) return null;
+  return { kind: skyKind(code, cloud), cloud };
+}
+function skyPhrase(kind, isNight) {
+  return { clear: 'clear sky', fair: isNight ? 'mostly clear' : 'mostly sunny', cloudy: 'partly cloudy', overcast: 'overcast',
+    fog: 'foggy', drizzle: 'drizzling', rain: 'raining', storm: 'thunderstorms' }[kind] || '';
+}
+// Header weather: this hour's icon and temperature, then the next few hours.
+function wxIcon(kind, night) {
+  const id = { clear: night ? 'moon-stars' : 'sun', fair: night ? 'cloud-moon' : 'cloud-sun', cloudy: night ? 'cloud-moon' : 'cloud-sun',
+    overcast: 'cloud', fog: 'cloud-fog', drizzle: 'cloud-rain', rain: 'cloud-rain', storm: 'cloud-lightning' }[kind] || 'cloud';
+  const sunny = !night && (kind === 'clear' || kind === 'fair');
+  return `<svg class="wx-icon${sunny ? ' sunny' : ''}" viewBox="0 0 256 256" aria-hidden="true"><use href="#w-${id}"/></svg>`;
+}
+function renderWeather(isNight) {
+  const el = $('hero-weather');
+  const day = forecastToday() || (state.forecast && state.forecast.today && state.forecast.today.date === todayIso() ? state.forecast.today : null);
+  const sky = day && day.sky ? day.sky : [];
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const sr = hhmmToMin(state.sun.sunrise), ss = hhmmToMin(state.sun.sunset);
+  const nightAt = (m) => m < sr || m > ss;
+  let cur = null;
+  for (const p of sky) if (!cur || Math.abs(hhmmToMin(p.t) - nowMin) < Math.abs(hhmmToMin(cur.t) - nowMin)) cur = p;
+  let out = '';
+  if (cur && cur.temp != null) {
+    const kind = SKY_FORCED || skyKind(cur.code, cur.cloud);
+    out += `<div class="wx-now" title="${cap1(skyPhrase(kind, isNight))}"><span class="visually-hidden">${cap1(skyPhrase(kind, isNight))}, </span>${wxIcon(kind, isNight)}<span class="temp num">${Math.round(cur.temp)}°</span></div>`;
+    const next = sky.filter(p => hhmmToMin(p.t) > hhmmToMin(cur.t) + 30).slice(0, 4);
+    if (next.length) {
+      out += `<div class="wx-hours">${next.map(p => {
+        const m = hhmmToMin(p.t) + 7; // slot ends on the hour
+        const k = skyKind(p.code, p.cloud);
+        const h = Math.round(m / 60) % 24, label = `${h % 12 || 12} ${h < 12 ? 'am' : 'pm'}`;
+        return `<div class="wx-hour" title="${cap1(skyPhrase(k, nightAt(m)))}"><span class="h">${label}</span>${wxIcon(k, nightAt(m))}<span class="temp num">${Math.round(p.temp)}°</span></div>`;
+      }).join('')}</div>`;
+    }
+  }
+  if (el.__html !== out) { el.__html = out; el.innerHTML = out; el.hidden = !out; }
+}
+
+// Centre the backdrop's sun on the current-weather icon. Runs every render
+// (two rect reads) and on resize, and only writes when the spot moves.
+let sunAt = '';
+function placeSun() {
+  const fx = $('sky-fx'), icon = document.querySelector('#hero-weather .wx-now svg');
+  if (!icon || !fx.firstChild) return;
+  const a = fx.getBoundingClientRect(), b = icon.getBoundingClientRect();
+  if (!b.width) return;
+  const cx = Math.round(a.right - (b.left + b.width / 2)), cy = Math.round(b.top + b.height / 2 - a.top);
+  const at = `${cx},${cy}`;
+  if (at === sunAt) return;
+  sunAt = at;
+  fx.style.setProperty('--sun-cx', cx + 'px');
+  fx.style.setProperty('--sun-cy', cy + 'px');
+}
+addEventListener('resize', placeSun);
+
+let skyKey = '';
+function renderSky(sky, isNight) {
+  const kind = sky ? sky.kind : null;
+  const key = `${kind}|${isNight}`;
+  if (key === skyKey) return;
+  skyKey = key;
+  const el = $('sky-fx');
+  el.className = 'sky-fx' + (kind ? ` sky-${kind}` : '') + (isNight ? ' night' : '');
+  if (!kind) { el.innerHTML = ''; return; }
+  // Fixed seed: the same sky lays out the same way on every render.
+  let seed = 11;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const f1 = (n) => n.toFixed(1);
+  let h = '';
+  const fine = kind === 'clear' || kind === 'fair' || kind === 'cloudy';
+  if (fine && !isNight) h += '<div class="fx-sun"></div>' + (kind === 'clear' ? '<div class="fx-halo"></div>' : '') + '<div class="fx-disc"></div>';
+  if (fine && isNight) {
+    h += '<div class="fx-moon"></div>';
+    const n = kind === 'clear' ? 28 : kind === 'fair' ? 18 : 9;
+    for (let i = 0; i < n; i++) {
+      const dur = 2 + rnd() * 3;
+      h += `<div class="fx-star" style="--x:${f1(rnd() * 100)}%;--y:${f1(rnd() * 55)}%;--s:${f1(1.2 + rnd() * 1.6)}px;--dur:${f1(dur)}s;--delay:${f1(-rnd() * dur)}s"></div>`;
+    }
+  }
+  if (kind === 'fog') {
+    for (let i = 0; i < 4; i++) h += `<div class="fx-fog" style="--top:${f1(-14 + i * 20)}%;--dur:${f1(26 + rnd() * 20)}s;--delay:${f1(-rnd() * 30)}s"></div>`;
+  }
+  const clouds = { fair: 2, cloudy: 4, overcast: 6, fog: 1, drizzle: 5, rain: 6, storm: 7 }[kind] || 0;
+  const heavy = kind === 'overcast' || kind === 'rain' || kind === 'storm';
+  for (let i = 0; i < clouds; i++) {
+    const w = 22 + rnd() * 26, dur = 80 + rnd() * 90;
+    h += `<div class="fx-cloud${heavy ? ' heavy' : ''}" style="--w:clamp(130px, ${f1(w)}cqw, 420px);--top:${f1(-8 + rnd() * 34)}%;--dur:${f1(dur)}s;--delay:${f1(-rnd() * dur)}s;--rest:${f1(rnd() * 85)}cqw"><i></i></div>`;
+  }
+  const drops = { drizzle: 26, rain: 64, storm: 84 }[kind] || 0;
+  for (let i = 0; i < drops; i++) {
+    const slow = kind === 'drizzle';
+    const dur = slow ? 1.2 + rnd() * 0.6 : 0.55 + rnd() * 0.35;
+    h += `<div class="fx-drop" style="--x:${f1(rnd() * 125)}%;--len:${Math.round(slow ? 7 + rnd() * 5 : 12 + rnd() * 16)}px;--dur:${f1(dur)}s;--delay:${(-rnd() * dur).toFixed(2)}s"></div>`;
+  }
+  if (kind === 'storm') h += '<div class="fx-flash"></div>';
+  el.innerHTML = h;
+}
+
+// The big figure eases to each new reading instead of jumping.
+const reduceMotion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+let shownW = null, targetW = null, tweenRaf = 0;
+function setLiveFigure(w) {
+  w = Math.max(0, w || 0);
+  if (w === targetW) return;
+  targetW = w;
+  cancelAnimationFrame(tweenRaf);
+  const from = shownW;
+  if (from == null || reduceMotion.matches || Math.abs(w - from) < 30) {
+    shownW = w; $('v-solar').innerHTML = html(fmtPower(w)); return;
+  }
+  const t0 = performance.now(), dur = 700;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    shownW = from + (w - from) * e;
+    $('v-solar').innerHTML = html(fmtPower(shownW));
+    if (k < 1) tweenRaf = requestAnimationFrame(step);
+  };
+  tweenRaf = requestAnimationFrame(step);
+}
+
+// ---- weather forecast (state.forecast, from Open-Meteo via the worker) ----
+function forecastToday() {
+  const f = state.forecast;
+  return f && f.today && f.today.date === todayIso() && f.today.series.length ? f.today : null;
+}
+function forecastTomorrow() {
+  const f = state.forecast;
+  return f && f.tomorrow && f.tomorrow.date === shiftDate(todayIso(), 1) ? f.tomorrow : null;
+}
+// WMO weather codes, as Open-Meteo reports them.
+function weatherLabel(code) {
+  if (code == null) return '';
+  if (code === 0) return 'clear';
+  if (code === 1) return 'mostly clear';
+  if (code === 2) return 'partly cloudy';
+  if (code === 3) return 'overcast';
+  if (code === 45 || code === 48) return 'foggy';
+  if (code >= 51 && code <= 57) return 'drizzle';
+  if (code >= 61 && code <= 67) return 'rain';
+  if (code >= 71 && code <= 77) return 'snow';
+  if (code >= 80 && code <= 82) return 'showers';
+  if (code >= 85 && code <= 86) return 'snow showers';
+  if (code >= 95) return 'thunderstorms';
+  return '';
+}
+const cap1 = (t) => t ? t[0].toUpperCase() + t.slice(1) : t;
+// Energy the forecast still expects between `fromMin` and sunset.
+function forecastRemainingWh(fc, fromMin) {
+  return fc.series.reduce((sum, p) => sum + (hhmmToMin(p.t) > fromMin ? p.expected_w * 0.25 : 0), 0);
+}
+function fmtKwh(wh) { const e = fmtEnergy(wh); return `${e.text} ${e.unit}`; }
+function fmtDuration(min) {
+  min = Math.max(0, Math.round(min));
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? (m ? `${h} h ${m} min` : `${h} h`) : `${m} min`;
+}
+
+function renderHero(isNight) {
+  const l = state.live;
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const sunsetMin = hhmmToMin(state.sun.sunset);
+  $('sunrise-label').textContent = to12h(state.sun.sunrise);
+  $('sunset-label').textContent = to12h(state.sun.sunset);
+  $('sunset-sub').textContent = !isNight && sunsetMin > nowMin ? `sunset, in ${fmtDuration(sunsetMin - nowMin)}` : 'sunset';
+  const nowHHMM = `${String(ist.getUTCHours()).padStart(2, '0')}:${String(ist.getUTCMinutes()).padStart(2, '0')}`;
+  $('now-label').textContent = to12h(nowHHMM);
+
+  const fc = forecastToday();
+  $('view-toggle').style.display = fc ? '' : 'none';
+  renderWeather(isNight);
+
+  if (state.has_meter && l.home_w != null) {
+    $('hero-live-wrap').style.display = 'none';
+    $('hero-sentences').style.display = '';
+    const mode = (l.export_w || 0) >= 30 ? 'export' : ((l.import_w || 0) >= 30 ? 'import' : 'balanced');
+    let extra = mode === 'export' ? `<p class="s-grid">Sending ${fmtPower(l.export_w).text} kW to the grid</p>`
+      : mode === 'import' ? `<p class="s-grid">Taking ${fmtPower(l.import_w).text} kW from the grid</p>` : '';
+    $('hero-sentences').innerHTML = `<p class="s-solar">Making ${fmtPower(l.solar_w).text} kW</p><p>Home using ${fmtPower(l.home_w).text} kW</p>${extra}`;
+  } else {
+    $('hero-live-wrap').style.display = '';
+    $('hero-sentences').style.display = 'none';
+    const madeWh = state.today.produced_wh || 0;
+    // The headline is what today has made; beside it, what's happening now
+    // and where the day is heading.
+    $('v-total').innerHTML = html(fmtEnergy(madeWh));
+    $('hero-total-label').textContent = isNight ? 'made today' : 'so far today';
+    setLiveFigure(isNight ? 0 : l.solar_w);
+    $('hero-sub-mode').textContent = isNight ? `back at ${to12h(state.sun.sunrise)}` : 'right now';
+    // vs_yesterday_wh compares against yesterday up to this same time of day.
+    const vy = state.today.vs_yesterday_wh;
+    const byNow = isNight ? '' : ' by now';
+    $('hero-sub-yesterday').textContent = vy == null ? '' : Math.abs(vy) < 50 ? `about the same as yesterday${byNow}` :
+      `${fmtIN(1).format(Math.abs(vy) / 1000)} kWh ${vy >= 0 ? 'more' : 'less'} than yesterday${byNow}`;
+    const tm = forecastTomorrow();
+    if (fc && !isNight && nowMin >= hhmmToMin(state.sun.sunrise)) {
+      $('v-forecast').innerHTML = html(fmtEnergy(madeWh + forecastRemainingWh(fc, nowMin)));
+      $('hero-fc-label').textContent = 'expected by sunset';
+    } else if (tm) {
+      $('v-forecast').innerHTML = html(fmtEnergy(tm.expected_wh));
+      $('hero-fc-label').textContent = 'expected tomorrow';
+    } else {
+      $('v-forecast').innerHTML = html(fmtEnergy(state.yesterday.produced_wh || 0));
+      $('hero-fc-label').textContent = 'yesterday';
+    }
+  }
+
+  const note = $('hero-note');
+  const noteHtml = diag ? `<svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><div><b>${esc(diag.title)}</b><span>${esc(diag.detail)}</span></div>` : '';
+  if (note.__html !== noteHtml) { note.__html = noteHtml; note.innerHTML = noteHtml; note.classList.toggle('show', !!diag); }
+  renderSky(skyNow(), isNight);
+  placeSun();
+
+  drawArc(isNight);
+
+  if (!window.__liveSummaryTimer || Date.now() - window.__liveSummaryTimer > 60000) {
+    window.__liveSummaryTimer = Date.now();
+    $('live-summary').textContent = `Making ${fmtPower(state.live.solar_w).text} kilowatts. ${fmtIN(1).format((state.today.produced_wh||0)/1000)} kilowatt hours so far today.${diag ? ' ' + diag.title : ''}`;
+  }
+}
+
+// ---- monotone cubic path (Fritsch–Carlson) ----
+// Unlike Catmull-Rom, this never overshoots the data: a sharp cloud-edge
+// drop can't swing the line below zero or above a real peak.
+function smoothPath(pts) {
+  const n = pts.length;
+  if (n === 0) return '';
+  if (n < 3) return pts.map((p, i) => `${i ? 'L' : 'M'} ${p[0]},${p[1]}`).join(' ');
+  const dx = [], sl = [];
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = pts[i + 1][0] - pts[i][0];
+    sl[i] = dx[i] ? (pts[i + 1][1] - pts[i][1]) / dx[i] : 0;
+  }
+  const m = [sl[0]];
+  for (let i = 1; i < n - 1; i++) {
+    if (sl[i - 1] * sl[i] <= 0) m[i] = 0;
+    else {
+      const w1 = 2 * dx[i] + dx[i - 1], w2 = dx[i] + 2 * dx[i - 1];
+      m[i] = (w1 + w2) / (w1 / sl[i - 1] + w2 / sl[i]);
+    }
+  }
+  m[n - 1] = sl[n - 2];
+  let d = `M ${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = dx[i] / 3;
+    d += ` C ${pts[i][0] + h},${pts[i][1] + m[i] * h} ${pts[i + 1][0] - h},${pts[i + 1][1] - m[i + 1] * h} ${pts[i + 1][0]},${pts[i + 1][1]}`;
+  }
+  return d;
+}
+
+let arcGeom = null; // cached for tooltip lookups
+
+// The SVG's viewBox is kept in sync with arc-wrap's actual pixel box (via
+// ResizeObserver below) so 1 viewBox unit is always 1 CSS px in both axes.
+let ARC_W = 1000, ARC_H = 400;
+let lastIsNight = false;
+
+// "curve" (power through the day) or "hourly" (energy per hour, bars).
+let chartView = 'curve';
+try { if (localStorage.getItem('chartView') === 'hourly') chartView = 'hourly'; } catch (e) {}
+function setChartView(v) {
+  chartView = v;
+  try { localStorage.setItem('chartView', v); } catch (e) {}
+  document.querySelectorAll('#view-toggle button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+  $('arc-tooltip').style.display = 'none';
+  if (state) drawArc(lastIsNight);
+}
+
+function syncArcViewbox() {
+  const el = $('arc-wrap');
+  const w = Math.max(1, Math.round(el.clientWidth));
+  const h = Math.max(1, Math.round(el.clientHeight));
+  if (w === ARC_W && h === ARC_H) return;
+  ARC_W = w; ARC_H = h;
+  $('arc-svg').setAttribute('viewBox', `0 0 ${ARC_W} ${ARC_H}`);
+  if (state) drawArc(lastIsNight);
+}
+
+// kWh made in each clock hour, from the 5-minute power samples.
+function hourlyActualWh(series) {
+  const out = {};
+  for (let i = 0; i < series.length; i++) {
+    const [t, kw] = series[i];
+    const dt = i > 0 && t > series[i - 1][0] ? Math.min(15, t - series[i - 1][0]) : 5;
+    const h = Math.floor(t / 60);
+    out[h] = (out[h] || 0) + kw * 1000 * dt / 60;
+  }
+  return out;
+}
+
+function drawArc(isNight) {
+  lastIsNight = isNight;
+  const fc = forecastToday();
+  const hourly = chartView === 'hourly' && !!fc;
+  $('hero').classList.toggle('hourly', hourly);
+  // Room at the top for the view switch (and, on phones, the legend below it).
+  const PAD_B = Math.max(56, ARC_H * 0.18), PAD_T = hourly && ARC_W < 560 ? 60 : fc ? 34 : Math.max(16, ARC_H * 0.05);
+  const W = ARC_W, H = ARC_H;
+  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
+  const span = Math.max(1, sunsetMin - sunriseMin);
+  const capKw = (state.plant.capacity_w || 3500) / 1000;
+  const x = (min) => ((min - sunriseMin) / span) * W;
+  const y = (kw) => (H - PAD_B) - (Math.max(0, Math.min(kw, capKw)) / capKw) * (H - PAD_B - PAD_T);
+  $('horizon-line').setAttribute('y1', H - PAD_B); $('horizon-line').setAttribute('y2', H - PAD_B);
+  $('horizon-line').setAttribute('x2', W);
+  // sun-row sits right under the horizon, wherever that lands — a single
+  // source of truth instead of separately hand-tuned per breakpoint.
+  document.querySelector('.sun-row').style.top = ((H - PAD_B) / H * 100) + '%';
+
+  const series = (state.today.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes() + ist.getUTCSeconds() / 60;
+  const fcPts = fc ? fc.series.map(p => [hhmmToMin(p.t), p.expected_w / 1000, p.clear_w / 1000]) : [];
+
+  // "now" label follows the now-marker; it gives way to the sunrise/sunset
+  // labels when it would collide with them.
+  const nowWrap = $('now-label-wrap');
+  const nowX = x(Math.min(Math.max(nowMin, sunriseMin), sunsetMin));
+  // sun-row is inset from the chart on phones; convert to its coordinates.
+  nowWrap.style.left = (nowX - document.querySelector('.sun-row').offsetLeft) + 'px';
+  const nr = nowWrap.getBoundingClientRect();
+  const rr = document.querySelector('.sun-row .sunrise').getBoundingClientRect();
+  const sr = document.querySelector('.sun-row .sunset').getBoundingClientRect();
+  const nowFits = !isNight && nr.left > rr.right + 12 && nr.right < sr.left - 12;
+  nowWrap.style.visibility = nowFits ? '' : 'hidden';
+
+  // Night: draw TODAY's full sunrise-to-sunset curve (no now-marker).
+  const todayPts = isNight
+    ? series.filter(p => p[0] >= sunriseMin && p[0] <= sunsetMin)
+    : series.filter(p => p[0] >= sunriseMin && p[0] <= Math.min(nowMin, sunsetMin));
+  const pathPts = todayPts.map(p => [x(p[0]), y(p[1])]);
+
+  const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+  const label = (id, at) => {
+    if (!at) { show(id, false); return; }
+    $(id).setAttribute('x', Math.min(W - 36, Math.max(36, at[0])));
+    $(id).setAttribute('y', Math.max(PAD_T + 14, at[1] - 10));
+    show(id, true);
+  };
+
+  // Clear sky: the whole day, as the ceiling today could have reached.
+  const clearXY = fcPts.filter(p => p[0] >= sunriseMin && p[0] <= sunsetMin).map(p => [x(p[0]), y(p[2])]);
+  $('clear-path').setAttribute('d', !hourly ? smoothPath(clearXY) : '');
+  // Label it over the afternoon still to come (or just past its peak at
+  // night), where it's clear of today's line.
+  const nowXc = x(nowMin);
+  const clearAhead = isNight ? [] : clearXY.filter(p => p[0] > nowXc + 40);
+  const clearAt = clearAhead.length > 3 ? clearAhead[Math.floor(clearAhead.length * 0.55)]
+    : clearXY[Math.min(clearXY.length - 1, Math.round(clearXY.length * 0.62))];
+  label('clear-label', !hourly && clearXY.length ? clearAt : null);
+
+  // Forecast: only the part of the day still to come, picking up from the
+  // last real sample.
+  const futureFc = isNight ? [] : fcPts.filter(p => p[0] > nowMin && p[0] <= sunsetMin);
+  const fcXY = futureFc.map(p => [x(p[0]), y(p[1])]);
+  if (fcXY.length && pathPts.length && !diag) fcXY.unshift(pathPts[pathPts.length - 1]);
+  $('fc-path').setAttribute('d', !hourly && fcXY.length > 1 ? smoothPath(fcXY) : '');
+  // Forecast label goes under its line (the clear-sky label sits above).
+  const fcAt = fcXY.length > 6 ? fcXY[Math.floor(fcXY.length * 0.3)] : null;
+  label('fc-label', !hourly && fcAt && W >= 560 ? [fcAt[0], Math.min(y(0) - 6, fcAt[1] + 30)] : null);
+
+  // Outages: a shaded band over each span the panels were off with sun about.
+  $('outage-bands').innerHTML = todayOutages().map(sp => {
+    const x0 = x(sp.from), x1 = x(sp.ongoing && !isNight ? Math.max(sp.to, nowMin) : sp.to);
+    const w = Math.max(0, x1 - x0);
+    const lbl = w >= 54 ? `<text class="outage-label" x="${x0 + w / 2}" y="${y(0) - 8}" text-anchor="middle">${sp.kind === 'no_data' ? 'no data' : 'no power'}</text>` : '';
+    return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>${lbl}`;
+  }).join('');
+
+  // Yesterday's dotted ghost: only when there's no forecast to compare with.
+  const yList = (state.yesterday.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  const ghostPts = fc || hourly ? [] : yList.filter(p => p[0] >= sunriseMin && p[0] <= sunsetMin);
+  const ghostXY = ghostPts.map(p => [x(p[0]), y(p[1])]);
+  $('ghost-path').setAttribute('d', smoothPath(ghostXY));
+  if (ghostXY.length) {
+    const ahead = isNight ? [] : ghostPts.map((p, i) => [p, ghostXY[i]]).filter(([p]) => p[0] > nowMin + 20);
+    label('ghost-label', ahead.length >= 3 ? ahead[Math.floor(ahead.length / 2)][1] : ghostXY.reduce((a, b) => (b[1] < a[1] ? b : a)));
+  } else show('ghost-label', false);
+
+  // Per-hour bars: clear sky behind, forecast as a dashed outline, what was
+  // actually made as a solid bar. One kWh per hour = one kW average, so the
+  // same y-scale (and the inverter-limit line) still applies.
+  let hours = [];
+  if (hourly) {
+    const act = hourlyActualWh(series);
+    const nowH = Math.floor(nowMin / 60);
+    for (let h = Math.floor(sunriseMin / 60); h * 60 < sunsetMin; h++) {
+      let fcWh = 0, clearWh = 0;
+      for (const p of fcPts) if (Math.floor(p[0] / 60) === h) { fcWh += p[1] * 250; clearWh += p[2] * 250; }
+      const past = isNight || h < nowH, current = !isNight && h === nowH;
+      hours.push({ h, fcWh, clearWh, actWh: past || current ? (act[h] || 0) : null, current });
+    }
+    const slot = W / (span / 60);
+    const bw = Math.max(4, slot * 0.62);
+    $('hour-bars').innerHTML = hours.map(b => {
+      const cx = Math.min(W - bw / 2, Math.max(bw / 2, x(b.h * 60 + 30)));
+      const r = (wh, cls) => { const top = y(wh / 1000); return `<rect class="${cls}" x="${cx - bw / 2}" y="${top}" width="${bw}" height="${Math.max(0, y(0) - top)}" rx="3"/>`; };
+      return r(b.clearWh, 'hour-clear') + (b.actWh != null ? r(b.actWh, 'hour-actual' + (b.current ? ' partial' : '')) : '') + r(b.fcWh, 'hour-fc');
+    }).join('');
+  } else {
+    $('hour-bars').innerHTML = '';
+  }
+
+  const linePath = hourly ? '' : smoothPath(pathPts);
+  $('arc-line-path').setAttribute('d', linePath);
+  $('arc-fill-path').setAttribute('d', linePath && pathPts.length
+    ? linePath + ` L ${pathPts[pathPts.length - 1][0]},${y(0)} L ${pathPts[0][0]},${y(0)} Z` : '');
+
+  // now marker: hidden at night and in the per-hour view.
+  const nowDot = $('now-dot'), nowGlow = $('now-glow');
+  if (!isNight && !hourly && pathPts.length) {
+    const last = pathPts[pathPts.length - 1];
+    nowDot.setAttribute('cx', last[0]); nowDot.setAttribute('cy', last[1]);
+    nowGlow.setAttribute('cx', last[0]); nowGlow.setAttribute('cy', last[1]);
+    nowDot.style.display = ''; nowGlow.style.display = '';
+  } else {
+    nowDot.style.display = 'none'; nowGlow.style.display = 'none';
+  }
+
+  arcGeom = { x, y, sunriseMin, sunsetMin, capKw, series, yList, fcPts, hours, hourly, nowMin, isNight };
+}
+
+function attachArcInteraction() {
+  const svg = $('arc-svg'), tip = $('arc-tooltip'), wrap = $('arc-wrap');
+  const nearest = (list, min) => {
+    let best = null, bestD = Infinity;
+    for (const p of list) { const d = Math.abs(p[0] - min); if (d < bestD) { bestD = d; best = p; } }
+    return bestD <= 20 ? best : null;
+  };
+  const hm = (min) => `${pad2(Math.floor(min / 60) % 24)}:${pad2(Math.round(min % 60))}`;
+  function show(clientX) {
+    const g = arcGeom;
+    if (!g) return;
+    const rect = svg.getBoundingClientRect();
+    const relX = (clientX - rect.left) / rect.width;
+    const min = g.sunriseMin + relX * (g.sunsetMin - g.sunriseMin);
+    let rows = [];
+    if (g.hourly) {
+      const b = g.hours.find(b => b.h === Math.floor(min / 60));
+      if (!b) return;
+      rows.push(`<b>${to12h(hm(b.h * 60))} to ${to12h(hm(b.h * 60 + 60))}</b>`);
+      if (b.actWh != null) rows.push(`Made ${fmtIN(2).format(b.actWh / 1000)} kWh${b.current ? ' so far' : ''}`);
+      rows.push(`Forecast ${fmtIN(2).format(b.fcWh / 1000)} kWh`);
+      rows.push(`Clear sky ${fmtIN(2).format(b.clearWh / 1000)} kWh`);
+    } else {
+      const today = (g.isNight || min <= g.nowMin) ? nearest(g.series, min) : null;
+      const f = nearest(g.fcPts, min);
+      const yst = nearest(g.yList, min);
+      if (!today && !f && !yst) return;
+      const at = today ? today[0] : f ? f[0] : yst[0];
+      rows.push(`<b>${to12h(hm(at))}</b>`);
+      if (today) rows.push(`Today ${fmtIN(2).format(today[1])} kW`);
+      if (f && (!today || g.isNight)) rows.push(`Forecast ${fmtIN(2).format(f[1])} kW`);
+      if (f) rows.push(`Clear sky ${fmtIN(2).format(f[2])} kW`);
+      if (yst) rows.push(`Yesterday ${fmtIN(2).format(yst[1])} kW`);
+    }
+    tip.innerHTML = rows.join('<br>');
+    tip.style.display = 'block';
+    const px = clientX - rect.left;
+    let left = px + 12;
+    if (left + 170 > wrap.clientWidth) left = px - 182;
+    tip.style.left = Math.max(0, left) + 'px';
+    tip.style.top = '30px';
+  }
+  svg.addEventListener('pointermove', (e) => show(e.clientX));
+  svg.addEventListener('pointerleave', () => tip.style.display = 'none');
+  svg.addEventListener('keydown', (e) => { if (e.key === 'Escape') tip.style.display = 'none'; });
+  document.querySelectorAll('#view-toggle button').forEach(b => b.addEventListener('click', () => setChartView(b.dataset.view)));
+  setChartView(chartView);
+}
+
+function renderLedger(isNight) {
+  const t = state.today;
+  const now = istNow();
+  const mName = MONTH_FULL[(state.month.month || (now.getUTCMonth() + 1)) - 1];
+  $('today-note').textContent = `${WEEKDAY_FULL[now.getUTCDay()]} ${now.getUTCDate()} ${mName}`;
+  const cells = [];
+  const price = state.plant.price_per_kwh;
+  cells.push({
+    figure: t.earned != null ? fmtCurrency(t.earned) : '–',
+    label: price ? `worth today, at ${fmtCurrencyPrecise(price)} a unit` : 'worth today',
+  });
+  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak at ${to12h(t.peak_at)}` : 'peak' });
+  const tm = forecastTomorrow();
+  if (tm) {
+    const w = dayWeatherPhrase({ code: tm.weather_code, cloud_pct: tm.cloud_pct, precip_mm: tm.precip_mm, temp_min: tm.temp_min, temp_max: tm.temp_max });
+    const icon = wxIcon(skyKind(tm.weather_code, tm.cloud_pct), false).replace('class="wx-icon', 'class="wx-icon ledger-icon');
+    cells.push({ figure: `${icon}~${html(fmtEnergy(tm.expected_wh))}`, label: w ? `tomorrow · ${w[0].toLowerCase()}${w.slice(1)}` : 'tomorrow' });
+  }
+  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday' });
+  $('ledger').innerHTML = cells.map(c => `<div class="cell"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
+}
+// ---- month browsing ----
+// viewYm null = the current month, live from state; otherwise [y, m] of a
+// past month fetched from /api/month (finished months never change, so
+// they're cached for the life of the page).
+let viewYm = null;
+const monthCache = new Map();
+const monthFailed = new Set();
+const pad2 = (n) => String(n).padStart(2, '0');
+const ymKey = (y, m) => `${y}-${pad2(m)}`;
+function curYm() {
+  if (state.month.year) return [state.month.year, state.month.month];
+  const n = istNow(); return [n.getUTCFullYear(), n.getUTCMonth() + 1];
+}
+function installParts() {
+  const s = state.plant.install_date;
+  return s ? s.split('-').map(Number) : null;
+}
+function shiftYm([y, m], k) { const t = y * 12 + (m - 1) + k; return [Math.floor(t / 12), (t % 12) + 1]; }
+
+async function showMonth(y, m) {
+  const [cy, cm] = curYm();
+  viewYm = (y === cy && m === cm) ? null : [y, m];
+  const key = ymKey(y, m);
+  if (viewYm && !monthCache.has(key)) {
+    monthFailed.delete(key);
+    $('month-body').classList.add('loading');
+    safeRender();
+    try {
+      const r = await fetch('/api/month?ym=' + key);
+      if (!r.ok) throw new Error('http ' + r.status);
+      monthCache.set(key, await r.json());
+    } catch (e) {
+      monthFailed.add(key);
+    }
+    $('month-body').classList.remove('loading');
+  }
+  safeRender();
+}
+
+function renderCalendar() {
+  const now = istNow();
+  const [cy, cm] = curYm();
+  const [vy, vm] = viewYm || [cy, cm];
+  const isCurrent = !viewYm;
+  const key = ymKey(vy, vm);
+  const month = isCurrent ? state.month : monthCache.get(key);
+  const mName = MONTH_FULL[vm - 1];
+  $('month-head').textContent = vy === now.getUTCFullYear() ? mName : `${mName} ${vy}`;
+
+  const inst = installParts();
+  $('month-next').disabled = isCurrent;
+  $('month-prev').disabled = !!inst && vy * 12 + vm <= inst[0] * 12 + inst[1];
+
+  const grid = $('cal-grid');
+  const setGrid = (h) => { if (grid.__html !== h) { grid.__html = h; grid.innerHTML = h; attachTooltips(grid.querySelectorAll('[data-tip]')); } };
+  if (!month) {
+    if (monthFailed.has(key)) {
+      setGrid('');
+      $('month-stats').innerHTML = `<div class="month-error">Couldn't load ${mName}.<button id="month-retry">Try again</button></div>`;
+      $('month-retry').onclick = () => showMonth(vy, vm);
+    }
+    return; // still loading: keep the previous grid, dimmed
+  }
+  const days = month.days || [];
+  if (!days.length) { setGrid(''); $('month-stats').innerHTML = ''; return; }
+  const firstDow = (new Date(Date.UTC(vy, vm - 1, 1)).getUTCDay() + 6) % 7; // Mon=0
+  let cellsHtml = '';
+  for (let i = 0; i < firstDow; i++) cellsHtml += '<div></div>';
+  const maxWh = Math.max(1, ...days.map(d => d.produced_wh || 0));
+  const openDate = $('day-dialog').open ? dayDate : null;
+  for (const d of days) {
+    const isToday = isCurrent && d.day === now.getUTCDate();
+    if (d.not_installed) {
+      cellsHtml += `<div class="cal-day not-installed empty-mist"><div class="d">${d.day}</div></div>`;
+      continue;
+    }
+    if (d.produced_wh == null) {
+      cellsHtml += `<div class="cal-day empty-mist${isToday ? ' today' : ''}"><div class="d">${d.day}</div></div>`;
+      continue;
+    }
+    const date = `${vy}-${pad2(vm)}-${pad2(d.day)}`;
+    const t = d.produced_wh / maxWh;
+    const bg = mixColor(t);
+    const kwh = fmtIN(1).format(d.produced_wh / 1000);
+    const earn = state.plant.price_per_kwh ? fmtCurrency(d.produced_wh / 1000 * state.plant.price_per_kwh) : null;
+    const tip = `${MONTH_NAMES[vm-1]} ${d.day}: ${kwh} kWh${earn ? ', ' + earn : ''}`;
+    cellsHtml += `<div class="cal-day${isToday ? ' today' : ''}${date === openDate ? ' selected' : ''}" style="background:${bg}" data-date="${date}" data-tip="${tip}" role="button" tabindex="0" aria-label="${tip}. Show this day's curve."><div class="d">${d.day}</div><div class="v">${kwh}</div></div>`;
+  }
+  setGrid(cellsHtml);
+
+  const stats = [];
+  stats.push({ figure: html(fmtEnergy(month.total_wh || 0)), label: isCurrent ? 'so far this month' : `made in ${mName}` });
+  if (state.plant.price_per_kwh) {
+    stats.push({ figure: fmtCurrency((month.total_wh || 0) / 1000 * state.plant.price_per_kwh), label: isCurrent ? 'worth so far this month' : `worth in ${mName}` });
+  }
+  // Average over finished days only — today's partial total would drag it down.
+  const doneDays = days.filter(d => d.produced_wh != null && !(isCurrent && d.day === now.getUTCDate()));
+  if (doneDays.length >= 2) {
+    stats.push({ figure: html(fmtEnergy(doneDays.reduce((a, d) => a + d.produced_wh, 0) / doneDays.length)), label: 'average day' });
+  }
+  if (month.best_day) {
+    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day · ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
+  }
+  const statsHtml = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
+  if ($('month-stats').__html !== statsHtml) { $('month-stats').__html = statsHtml; $('month-stats').innerHTML = statsHtml; }
+}
+function mixColor(t) {
+  const lo = getComputedStyle(document.documentElement).getPropertyValue('--cal-lo').trim();
+  const hi = getComputedStyle(document.documentElement).getPropertyValue('--cal-hi').trim();
+  return `color-mix(in srgb, ${hi} ${Math.round(t*100)}%, ${lo})`;
+}
+
+function renderYear() {
+  const now = istNow();
+  $('year-head').textContent = String(state.year.year || now.getUTCFullYear());
+  const months = state.year.months || [];
+  const maxWh = Math.max(1, ...months.map(m => m.produced_wh || 0));
+  const curMonth = state.month.month || (now.getUTCMonth() + 1);
+  const anyNotInstalled = months.some(m => m.not_installed);
+  const [vy, vm] = viewYm || curYm();
+  const viewingMonth = (state.year.year === vy) ? vm : null;
+  const barsHtml = months.map(m => {
+    if (m.not_installed) return `<div class="year-col"><div class="year-bar dash"></div></div>`;
+    if (m.produced_wh == null) return `<div class="year-col"></div>`;
+    const h = Math.max(2, (m.produced_wh / maxWh) * 170);
+    const kwh = fmtIN(0).format(m.produced_wh / 1000);
+    const tip = `${MONTH_NAMES[m.month-1]} ${state.year.year}: ${kwh} kWh`;
+    return `<div class="year-col${m.month === viewingMonth ? ' viewing' : ''}" data-ym="${ymKey(state.year.year, m.month)}" role="button" tabindex="0" aria-label="${tip}. Show this month."><div class="val">${kwh}</div><div class="year-bar" style="height:${h}px" data-tip="${tip}"></div></div>`;
+  }).join('') + (anyNotInstalled ? `<div class="not-installed-note">Before the panels went up</div>` : '');
+  const bars = $('year-bars');
+  if (bars.__html !== barsHtml) { bars.__html = barsHtml; bars.innerHTML = barsHtml; attachTooltips(bars.querySelectorAll('[data-tip]')); }
+  $('year-labels').innerHTML = months.map(m => `<span class="${m.month === viewingMonth ? 'viewing' : (m.month === curMonth ? 'current' : '')}">${MONTH_NAMES[m.month-1]}</span>`).join('');
+
+  const installDate = state.plant.install_date;
+  const stats = [];
+  stats.push({
+    figure: html(fmtEnergy(state.year.since_install_wh || 0)),
+    label: installDate ? `since the panels went up on ${fmtDateLong(installDate, false)}` : 'since the panels went up',
+  });
+  if (state.plant.price_per_kwh) {
+    stats.push({ figure: fmtCurrency((state.year.since_install_wh || 0) / 1000 * state.plant.price_per_kwh), label: 'worth, all told' });
+  }
+  $('year-stats').innerHTML = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
+}
+
+function attachTooltips(nodes) {
+  const tip = $('cal-tooltip');
+  nodes.forEach(n => {
+    n.addEventListener('pointerenter', (e) => showTip(e, n));
+    n.addEventListener('focus', (e) => showTip(e, n));
+    n.addEventListener('pointerleave', () => tip.style.display = 'none');
+    n.addEventListener('blur', () => tip.style.display = 'none');
+  });
+  function showTip(e, n) {
+    tip.textContent = n.getAttribute('data-tip');
+    tip.style.display = 'block';
+    const r = n.getBoundingClientRect();
+    tip.style.left = (r.left + window.scrollX) + 'px';
+    tip.style.top = (r.top + window.scrollY - 34) + 'px';
+  }
+}
+
+// A generic device_type like "WAAREE" (the real account's raw value) reads
+// oddly as "Inverter WAAREE is online" — that's not a model name, it's the
+// brand. Phrase around it; a real model name (e.g. "H1-3.6-E") is used
+// as-is.
+function isGenericType(t) { return /^waaree$/i.test((t || '').trim()); }
+
+function renderSystem(isNight) {
+  const devs = state.devices || [];
+  const alarms = state.alarms || [];
+  const p = state.plant;
+  const d = devs[0];
+  let out = '';
+  let statusClass = '';
+  let statusTitle = '';
+  let statusDetail = '';
+
+  // Current status becomes the first row in the system table.
+  if (!d) {
+    statusClass = 'rest';
+    statusTitle = 'Waiting';
+    statusDetail = 'Inverter details have not arrived from WAAREE yet.';
+  } else if (alarms.length) {
+    statusClass = 'alert';
+    statusTitle = alarms.length === 1 ? '1 alarm today' : `${alarms.length} alarms today`;
+    statusDetail = 'The inverter needs attention.';
+  } else if (diag) {
+    statusClass = 'alert';
+    statusTitle = esc(diag.title);
+    statusDetail = 'The latest readings need attention.';
+  } else if (d.status === 2) {
+    statusClass = 'alert';
+    statusTitle = 'Inverter fault';
+    statusDetail = 'The inverter is reporting a fault.';
+  } else if (d.status !== 1 && isNight) {
+    // An inverter is always "offline" at night; not something to flag.
+    statusClass = 'rest';
+    statusTitle = 'All quiet';
+    statusDetail = 'The inverter sleeps until sunrise.';
+  } else if (d.status !== 1) {
+    statusClass = 'alert';
+    statusTitle = 'Inverter offline';
+    statusDetail = 'No live inverter connection right now.';
+  } else {
+    statusTitle = 'All good';
+    statusDetail = 'Inverter online · no alarms today.';
+  }
+
+  // Only the few facts worth knowing at a glance: what's on the roof,
+  // what converts it, and since when.
+  const rows = [];
+  const kwp = p.panel_kwp;
+  if (p.panel_count && p.panel_w) {
+    rows.push(['Panels', `${p.panel_count} × ${fmtIN(0).format(p.panel_w)} W (${fmtIN(2).format(kwp)} kWp)`]);
+  } else if (kwp) {
+    rows.push(['Panels', `${fmtIN(1).format(kwp)} kWp`]);
+  }
+  const invKw = (p.capacity_w || 0) / 1000;
+  if (invKw || d) {
+    const brand = d && !isGenericType(d.device_type) ? esc(d.device_type) : 'WAAREE';
+    rows.push(['Inverter', `${brand}${invKw ? `, ${fmtIN(1).format(invKw)} kW` : ''}`]);
+  }
+  if (p.install_date) rows.push(['Installed', fmtDateLong(p.install_date, true)]);
+
+  out += renderSystemTable(statusClass, statusTitle, statusDetail);
+  if (rows.length) {
+    out += `<footer class="sys-meta" aria-label="System details">${rows.map(([k, v]) => `<span class="sys-meta-item"><span class="k">${k}</span><span class="v">${v}</span></span>`).join('')}</footer>`;
+  }
+  const body = $('sys-body');
+  if (body.__html !== out) {
+    body.__html = out; body.innerHTML = out;
+    const more = $('log-more');
+    if (more) more.onclick = () => { logShown += LOG_PAGE; safeRender(); };
+  }
+}
+
+// ---- system log ----
+// The latest 10 entries, then 10 more per "Load more".
+const LOG_PAGE = 10;
+let logShown = LOG_PAGE;
+function fmtLogDay(iso) {
+  const today = todayIso();
+  if (iso === today) return 'Today';
+  if (iso === shiftDate(today, -1)) return 'Yesterday';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].slice(0, 3)} ${d} ${MONTH_NAMES[m - 1]}`;
+}
+function logLine(e) {
+  const from = to12h(e.from);
+  if (e.kind === 'alarm') {
+    return { icon: 'ic-alert', cls: 'alarm', title: 'Inverter alarm', at: from, detail: e.detail ? esc(e.detail) : 'No details from WAAREE.' };
+  }
+  const mins = hhmmToMin(e.to) - hhmmToMin(e.from);
+  const lost = e.lost_wh != null && e.lost_wh >= 100 ? ` About ${fmtKwh(e.lost_wh)} missed.` : '';
+  const title = e.kind === 'no_data' ? 'Inverter went quiet' : 'Power cut';
+  const why = e.kind === 'no_data' ? 'WAAREE stopped receiving readings.' : 'The inverter stayed online, but the panels produced nothing.';
+  return {
+    icon: e.kind === 'no_data' ? 'ic-clock' : 'ic-alert', cls: e.kind, title,
+    at: e.ongoing ? `since ${from}` : `${from} to ${to12h(e.to)}`,
+    detail: `${e.ongoing ? 'Still going.' : fmtDuration(mins) + '.'} ${why}${lost}`,
+  };
+}
+function renderSystemTable(statusClass, statusTitle, statusDetail) {
+  const events = state.events || [];
+  let out = `<div class="sys-status ${statusClass}" role="status">
+      <span class="headline"><span class="dot"></span>${statusTitle}</span>
+      <span class="detail">${statusDetail}</span>
+    </div>
+    <h3 class="sys-log-head">Log</h3>
+    <div class="sys-table-wrap"><table class="sys-table">
+    <caption class="visually-hidden">System log: power cuts and inverter alarms</caption>
+    <colgroup><col class="when"><col class="event"><col></colgroup>
+    <thead><tr><th scope="col">when</th><th scope="col">event</th><th scope="col">details</th></tr></thead>
+    <tbody>`;
+  const shown = events.slice(0, logShown);
+  out += shown.map(e => {
+    const l = logLine(e);
+    return `<tr class="${l.cls}${e.ongoing ? ' ongoing' : ''}">
+      <td class="when"><strong>${fmtLogDay(e.date)}</strong><span>${l.at}</span></td>
+      <td><span class="event"><svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>${l.title}</span></td>
+      <td class="detail">${l.detail}</td>
+    </tr>`;
+  }).join('');
+  if (!events.length) {
+    out += '<tr><td class="empty" colspan="3">Nothing unusual so far. Power cuts and inverter problems will appear here.</td></tr>';
+  }
+  out += '</tbody></table></div>';
+  if (events.length > shown.length) {
+    out += `<button type="button" class="log-more" id="log-more">Load more</button>`;
+  }
+  return out;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- day detail ----
+// Today is drawn straight from the polled state; any other day comes from
+// /api/day (finished days never change, so they're cached for the page).
+let dayDate = null;
+const dayCache = new Map();
+const dayFailed = new Set();
+function todayIso() { const n = istNow(); return `${n.getUTCFullYear()}-${pad2(n.getUTCMonth() + 1)}-${pad2(n.getUTCDate())}`; }
+function shiftDate(iso, k) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + k));
+  return `${t.getUTCFullYear()}-${pad2(t.getUTCMonth() + 1)}-${pad2(t.getUTCDate())}`;
+}
+function dayData(iso) {
+  if (iso === todayIso()) {
+    const t = state.today;
+    const f = forecastToday();
+    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset,
+      weather: f ? { code: f.weather_code, cloud_pct: f.cloud_pct, precip_mm: f.precip_mm, temp_min: f.temp_min, temp_max: f.temp_max } : null,
+      events: (state.events || []).filter(e => e.date === iso) };
+  }
+  return dayCache.get(iso);
+}
+
+async function openDay(iso) {
+  dayDate = iso;
+  $('cal-tooltip').style.display = 'none';
+  const dlg = $('day-dialog');
+  if (!dlg.open) dlg.showModal();
+  renderDay();
+  safeRender(); // moves the calendar's selected ring
+  if (!dayData(iso)) {
+    dayFailed.delete(iso);
+    try {
+      const r = await fetch('/api/day?date=' + iso);
+      if (!r.ok) throw new Error('http ' + r.status);
+      dayCache.set(iso, await r.json());
+    } catch (e) {
+      dayFailed.add(iso);
+    }
+    if (dayDate === iso) renderDay();
+  }
+}
+
+function renderDay() {
+  const iso = dayDate;
+  if (!iso) return;
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  const isToday = iso === todayIso();
+  const yearPart = y === istNow().getUTCFullYear() ? '' : ` ${y}`;
+  const data = dayData(iso);
+  const when = isToday ? 'so far today' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : '';
+  const sky = data && data.weather ? dayWeatherPhrase(data.weather) : '';
+  const sub = cap1([when, sky].filter(Boolean).join('. '));
+  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${esc(sub)}</span>`;
+  $('day-next').disabled = iso >= todayIso();
+  const inst = state.plant.install_date;
+  $('day-prev').disabled = !!inst && iso <= inst;
+
+  const msg = $('day-msg'), svg = $('day-svg');
+  $('day-tip').style.display = 'none';
+  $('day-log').innerHTML = data ? dayLogHtml(data) : '';
+  if (!data) {
+    $('day-stats').innerHTML = '';
+    svg.innerHTML = '';
+    msg.style.display = 'flex';
+    if (dayFailed.has(iso)) {
+      msg.innerHTML = `Couldn't load this day.<button id="day-retry">Try again</button>`;
+      $('day-retry').onclick = () => openDay(iso);
+    } else msg.textContent = 'Loading…';
+    return;
+  }
+
+  const price = state.plant.price_per_kwh;
+  const cells = [{ figure: html(fmtEnergy(data.produced_wh)), label: isToday ? 'made so far' : 'made' }];
+  if (price) cells.push({ figure: fmtCurrency(data.produced_wh / 1000 * price), label: 'worth' });
+  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak at ${to12h(data.peak_at)}` : 'peak' });
+  const missed = (data.events || []).reduce((a, e) => a + (e.kind !== 'alarm' && e.lost_wh ? e.lost_wh : 0), 0);
+  if (missed >= 100) cells.push({ figure: html(fmtEnergy(missed)), label: 'missed to outages' });
+  $('day-stats').innerHTML = cells.map(c => `<div class="stat"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
+
+  const pts = (data.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
+  if (!pts.some(p => p[1] > 0)) {
+    svg.innerHTML = '';
+    msg.style.display = 'flex';
+    msg.textContent = data.series && data.series.length ? 'No solar output was recorded that day.' : 'WAAREE has no data for that day.';
+    return;
+  }
+  msg.style.display = 'none';
+  drawDay(data, pts);
+}
+
+// "Mostly sunny with a little rain, 25° to 32°". Built from mean cloud and
+// rainfall rather than the WMO code, which is the day's worst moment: one
+// five-minute shower would otherwise make a sunny day read "showers".
+function dayWeatherPhrase(w) {
+  const c = w.cloud_pct;
+  let sky = c == null ? '' : c < 20 ? 'Sunny' : c < 40 ? 'Mostly sunny' : c < 65 ? 'Partly cloudy' : c < 85 ? 'Mostly cloudy' : 'Overcast';
+  const p = w.precip_mm;
+  const wet = w.code >= 95 ? 'thunderstorms' : p == null ? '' : p < 0.5 ? '' : p < 3 ? 'a little rain' : p < 10 ? 'some rain' : 'heavy rain';
+  if (!sky && wet) sky = cap1(wet); else if (wet) sky += ` with ${wet}`;
+  const temps = w.temp_min != null && w.temp_max != null ? `${Math.round(w.temp_min)}° to ${Math.round(w.temp_max)}°` : '';
+  return [sky, temps].filter(Boolean).join(', ');
+}
+function dayLogHtml(data) {
+  const events = data.events || [];
+  if (!events.length) return '';
+  return `<ol class="log-list">${events.map(e => {
+    const l = logLine(e);
+    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}"><div class="log-when"><span class="t">${l.at}</span></div>
+      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
+      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div></li>`;
+  }).join('')}</ol>`;
+}
+
+let dayGeom = null;
+function drawDay(data, pts) {
+  const svg = $('day-svg'), box = $('day-chart');
+  const W = Math.max(1, box.clientWidth), H = Math.max(1, box.clientHeight);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const PAD_T = 18, PAD_B = 34, PAD_L = 0, PAD_R = 0;
+  // Frame the day by its sunrise/sunset, widened if the panels reported
+  // output outside it.
+  const lit = pts.filter(p => p[1] > 0);
+  const t0 = Math.min(hhmmToMin(data.sunrise), lit[0][0]);
+  const t1 = Math.max(hhmmToMin(data.sunset), lit[lit.length - 1][0]);
+  const capKw = (state.plant.capacity_w || 3500) / 1000;
+  const top = Math.max(capKw, ...pts.map(p => p[1]));
+  const x = (min) => PAD_L + ((min - t0) / Math.max(1, t1 - t0)) * (W - PAD_L - PAD_R);
+  const y = (kw) => (H - PAD_B) - (Math.max(0, kw) / top) * (H - PAD_B - PAD_T);
+  const inRange = pts.filter(p => p[0] >= t0 && p[0] <= t1);
+  const xy = inRange.map(p => [x(p[0]), y(p[1])]);
+  const line = smoothPath(xy);
+  const fill = xy.length ? line + `L ${xy[xy.length - 1][0]},${y(0)} L ${xy[0][0]},${y(0)} Z` : '';
+  let peak = inRange[0];
+  for (const p of inRange) if (p[1] > peak[1]) peak = p;
+  const noon = 12 * 60;
+  const ticks = [
+    { m: hhmmToMin(data.sunrise), label: to12h(data.sunrise), anchor: 'start' },
+    { m: noon, label: '12 pm', anchor: 'middle' },
+    { m: hhmmToMin(data.sunset), label: to12h(data.sunset), anchor: 'end' },
+  ];
+  svg.innerHTML = `
+    <defs><linearGradient id="day-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/><stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
+    </linearGradient></defs>
+    ${(data.events || []).filter(e => e.kind !== 'alarm' && e.to).map(e => {
+      const x0 = x(hhmmToMin(e.from)), w = Math.max(0, x(hhmmToMin(e.to)) - x0);
+      return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>`;
+    }).join('')}
+    <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mist)" stroke-width="1.5"/>
+    ${ticks.map(t => `<text class="axis" x="${Math.min(W, Math.max(0, x(t.m)))}" y="${H - 10}" text-anchor="${t.anchor}">${t.label}</text>`).join('')}
+    <path d="${fill}" fill="url(#day-fill)"/>
+    <path d="${line}" fill="none" stroke="var(--leaf)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${x(peak[0])}" cy="${y(peak[1])}" r="5" fill="var(--leaf)" stroke="var(--paper)" stroke-width="2"/>
+    <line id="day-guide" x1="0" x2="0" y1="${PAD_T}" y2="${y(0)}" stroke="var(--ink-soft)" stroke-width="1" stroke-dasharray="3 4" style="display:none"/>
+    <circle id="day-hover" r="5" fill="var(--paper)" stroke="var(--leaf-deep)" stroke-width="2" style="display:none"/>`;
+  dayGeom = { x, y, t0, t1, pts: inRange, W };
+}
+
+function dayPointer(e) {
+  if (!dayGeom || !dayGeom.pts.length) return;
+  const svg = $('day-svg'), tip = $('day-tip');
+  const rect = svg.getBoundingClientRect();
+  const min = dayGeom.t0 + ((e.clientX - rect.left) / rect.width) * (dayGeom.t1 - dayGeom.t0);
+  let best = dayGeom.pts[0];
+  for (const p of dayGeom.pts) if (Math.abs(p[0] - min) < Math.abs(best[0] - min)) best = p;
+  const px = dayGeom.x(best[0]), py = dayGeom.y(best[1]);
+  const guide = $('day-guide'), dot = $('day-hover');
+  guide.setAttribute('x1', px); guide.setAttribute('x2', px); guide.style.display = '';
+  dot.setAttribute('cx', px); dot.setAttribute('cy', py); dot.style.display = '';
+  const hm = `${pad2(Math.floor(best[0] / 60))}:${pad2(Math.round(best[0] % 60))}`;
+  tip.innerHTML = `<b>${to12h(hm)}</b> · ${fmtIN(2).format(best[1])} kW`;
+  tip.style.display = 'block';
+  const w = tip.offsetWidth;
+  tip.style.left = Math.max(0, Math.min(rect.width - w, px - w / 2)) + 'px';
+}
+function dayPointerEnd() {
+  $('day-tip').style.display = 'none';
+  const g = $('day-guide'), d = $('day-hover');
+  if (g) g.style.display = 'none';
+  if (d) d.style.display = 'none';
+}
+
+function wireHistory() {
+  $('month-prev').addEventListener('click', () => showMonth(...shiftYm(viewYm || curYm(), -1)));
+  $('month-next').addEventListener('click', () => showMonth(...shiftYm(viewYm || curYm(), 1)));
+  const onActivate = (el, fn) => {
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
+  };
+  onActivate($('cal-grid'), (e) => { const c = e.target.closest('[data-date]'); if (c) openDay(c.dataset.date); });
+  onActivate($('year-bars'), (e) => {
+    const c = e.target.closest('[data-ym]');
+    if (!c) return;
+    const [y, m] = c.dataset.ym.split('-').map(Number);
+    showMonth(y, m);
+    $('month-rail-anchor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  const dlg = $('day-dialog');
+  $('day-close').addEventListener('click', () => dlg.close());
+  $('day-prev').addEventListener('click', () => openDay(shiftDate(dayDate, -1)));
+  $('day-next').addEventListener('click', () => openDay(shiftDate(dayDate, 1)));
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' && !$('day-prev').disabled) openDay(shiftDate(dayDate, -1));
+    if (e.key === 'ArrowRight' && !$('day-next').disabled) openDay(shiftDate(dayDate, 1));
+  });
+  dlg.addEventListener('close', () => { dayDate = null; safeRender(); });
+  const svg = $('day-svg');
+  svg.addEventListener('pointermove', dayPointer);
+  svg.addEventListener('pointerdown', dayPointer);
+  svg.addEventListener('pointerleave', dayPointerEnd);
+  if (window.ResizeObserver) new ResizeObserver(debounce(() => { if (dayDate) renderDay(); }, 50)).observe($('day-chart'));
+}
+
+window.addEventListener('resize', debounce(() => { if (state) safeRender(); }, 150));
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+$('reload-btn').addEventListener('click', () => location.reload());
+$('retry-api').addEventListener('click', poll);
+$('retry-stale').addEventListener('click', poll);
+attachArcInteraction();
+wireHistory();
+if (window.ResizeObserver) {
+  new ResizeObserver(debounce(syncArcViewbox, 50)).observe($('arc-wrap'));
+} else {
+  window.addEventListener('resize', debounce(syncArcViewbox, 150));
+}
+
+let pollTimer = null;
+function startPolling() { if (pollTimer) return; poll(); pollTimer = setInterval(poll, 5000); }
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopPolling(); else startPolling(); });
+// Always load once (a tab opened in the background still has data when
+// fronted); only the repeating poll is tied to visibility.
+if (document.hidden) poll(); else startPolling();
+setInterval(() => { if (state) safeRender(); }, 1000);
+
+// PWA: service workers need HTTPS or localhost.
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+})();
+</script>
+</body>
+</html>
