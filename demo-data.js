@@ -4,7 +4,9 @@
   const LAT = 21.1292;
   const LON = 86.732285;
   const TILT_DEG = 23;
-  const PANEL_KWP = 3.5;
+  const PANEL_COUNT = 5;
+  const PANEL_W = 585;
+  const PANEL_KWP = PANEL_COUNT * PANEL_W / 1000;
   const INVERTER_W = 3500;
   const PRICE_PER_KWH = 4.5;
   const INSTALL_DATE = '2025-10-18';
@@ -131,9 +133,25 @@
     return clamp(cloudLoss * rainLoss * edge * cloudEdge, 0.12, 1.04);
   }
 
+  function powerCut(iso) {
+    const s = solarDay(iso);
+    const r = seeded(hashString(`cut:${iso}`));
+    const earliest = Math.max(s.sunrise + 75, 8 * 60 + 30);
+    const latest = Math.min(s.sunset - 90, 16 * 60);
+    const duration = 20 + Math.floor(r() * 36);
+    const start = Math.round((earliest + r() * Math.max(30, latest - earliest - duration)) / 5) * 5;
+    return { start, end: Math.min(start + duration, s.sunset - 30) };
+  }
+
+  function inPowerCut(iso, minute) {
+    const cut = powerCut(iso);
+    return minute >= cut.start && minute < cut.end;
+  }
+
   function actualPower(iso, minute, liveJitter = false) {
     const clear = clearPower(iso, minute);
     if (!clear) return 0;
+    if (inPowerCut(iso, minute)) return 0;
     const wx = weatherForHour(iso, Math.floor(minute / 60));
     let w = clear * transmittance(wx, iso, minute);
     if (liveJitter) w *= 0.965 + Math.random() * 0.07;
@@ -176,9 +194,26 @@
     const produced = integrate(series, 5);
     let peak = { t: '', solar_w: 0 };
     for (const p of series) if (p.solar_w > peak.solar_w) peak = p;
+    const cut = powerCut(iso);
+    const cutVisible = cutoffMinute >= cut.start;
+    const cutEnd = Math.min(cut.end, cutoffMinute);
+    let lostWh = 0;
+    if (cutVisible) {
+      for (let minute = cut.start; minute < cutEnd; minute += 5) lostWh += expectedPower(iso, minute) * 5 / 60;
+    }
+    const events = cutVisible ? [{
+      id: `demo-cut-${iso}`,
+      date: iso,
+      kind: 'power_cut',
+      from: hm(cut.start),
+      to: cutoffMinute < cut.end ? null : hm(cut.end),
+      ongoing: cutoffMinute < cut.end,
+      lost_wh: round(lostWh),
+      detail: null,
+    }] : [];
     const record = {
       date: iso, series, produced_wh: round(produced), peak_w: peak.solar_w, peak_at: peak.t,
-      sunrise: hm(s.sunrise), sunset: hm(s.sunset), weather: dailyWeather(iso), events: [],
+      sunrise: hm(s.sunrise), sunset: hm(s.sunset), weather: dailyWeather(iso), events,
     };
     dayCache.set(cacheKey, record);
     return record;
@@ -266,11 +301,17 @@
     const fToday = forecastDay(info.date, true);
     const fTomorrow = forecastDay(shiftDate(info.date, 1), false);
     const utcNow = nowUtc().toISOString();
+    const events = [];
+    for (let offset = 0; offset < 14; offset++) {
+      const iso = shiftDate(info.date, -offset);
+      const record = dayRecord(iso, offset === 0 ? info.minute : 1440);
+      events.push(...record.events);
+    }
     return {
       status: 'ok', server_now: utcNow, has_meter: false,
       plant: {
-        name: '3.5 kW Solar · Demo', capacity_w: INVERTER_W, price_per_kwh: PRICE_PER_KWH,
-        panel_kwp: PANEL_KWP, install_date: INSTALL_DATE, panel_count: 7, panel_w: 500,
+        name: 'Solar · Demo', capacity_w: INVERTER_W, price_per_kwh: PRICE_PER_KWH,
+        panel_kwp: PANEL_KWP, install_date: INSTALL_DATE, panel_count: PANEL_COUNT, panel_w: PANEL_W,
       },
       live: { solar_w: livePower, home_w: null, export_w: null, import_w: null, updated_at: new Date().toISOString() },
       sun: { sunrise: today.sunrise, sunset: today.sunset },
@@ -284,7 +325,7 @@
       devices: [{ sn: 'DEMO-35K-001', device_type: 'H1-3.6-E', status: 1, power_w: livePower }],
       alarms: [],
       forecast: { source: 'mock', fetched_at: utcNow, pr: 0.88, pr_days: 14, today: fToday, tomorrow: fTomorrow },
-      events: [],
+      events,
     };
   }
 
@@ -313,14 +354,4 @@
     return originalFetch(input, init);
   };
 
-  const style = document.createElement('style');
-  style.textContent = '.demo-strip{margin:-10px 0 18px;font-size:12px;color:var(--ink-soft);display:flex;gap:8px;align-items:center;flex-wrap:wrap}.demo-pill{padding:5px 9px;border:1px solid var(--mist);border-radius:999px;background:color-mix(in srgb,var(--paper) 82%,transparent)}';
-  document.head.appendChild(style);
-  const header = document.querySelector('header.app-header');
-  if (header) {
-    const strip = document.createElement('div');
-    strip.className = 'demo-strip';
-    strip.innerHTML = '<span class="demo-pill">static demo</span><span>3.5 kWp · 23° south · 21.129200, 86.732285 · synthetic weather + output</span>';
-    header.insertAdjacentElement('afterend', strip);
-  }
 })();
