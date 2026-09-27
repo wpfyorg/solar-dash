@@ -1,9 +1,9 @@
 {
-  "name": "solar-dash",
+  "name": "waaree-solar-dashboard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A self-hosted Cloudflare Worker dashboard for WAAREE PV Hub / FoxESS-white-label solar accounts.",
+  "description": "Self-hosted WAAREE PV Hub / FoxESS solar dashboard with live generation, weather forecasts, history, power-cut detection and PWA support. Runs on Cloudflare Workers.",
   "license": "MIT",
   "scripts": {
     "sync-assets": "node scripts/sync-assets.mjs",

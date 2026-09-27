@@ -239,6 +239,24 @@ export function curveFromHistory(series: HistoryRawSeries[], hasMeter: boolean):
   };
 }
 
+// The curve integrates pvPower, which is DC power on the panel side.
+// WAAREE's own energy counters are AC energy the inverter delivered, a few
+// percent less after conversion losses. The counters are what the calendar
+// shows and what the meter credits, so day totals use them; the curve is
+// the day's shape.
+
+/** WAAREE's counter for today so far, from the flow endpoint ("9.900" kWh). */
+export function yieldTodayWh(f: PlantFlowInfoResult): number | null {
+  const v = parseFloat(f.status?.yieldToday ?? "");
+  return Number.isFinite(v) && v >= 0 ? v * KW_TO_W : null;
+}
+
+/** One day's counter total from a month report, if it has that day. */
+export function reportDayWh(series: HistoryReportSeries[], day: number): number | null {
+  const p = series.find((s) => s.variable === "generation")?.data?.find((x) => x.index === day);
+  return p ? p.value * KW_TO_W : null;
+}
+
 export function energyUpTo(points: CurvePoint[], cutoffHhmm: string): number {
   let prevSecs: number | null = null;
   let total = 0;

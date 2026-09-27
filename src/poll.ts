@@ -18,7 +18,7 @@ import { Client, ClientError } from "./client";
 import type { Env } from "./env";
 import { isMock, plantOverrides } from "./env";
 import { findOutages, updateEvents } from "./events";
-import { buildForecast, fetchOpenMeteo, mockWeather, type PanelSetup } from "./forecast";
+import { buildForecast, fetchOpenMeteo, mockWeather, panelSetup } from "./forecast";
 import * as mapping from "./mapping";
 import { mockPoll, type MockScenario } from "./mock";
 import {
@@ -199,16 +199,8 @@ async function refreshForecast(
   const forecastAt = await getTimestamp(env, "forecast_at");
   if (prevToday && now - forecastAt < FORECAST_INTERVAL_SECONDS) return prevToday;
 
-  const o = plantOverrides(env);
-  const setup: PanelSetup = {
-    lat: parseFloat(env.LAT) || sun.DEFAULT_LAT,
-    lon: parseFloat(env.LON) || sun.DEFAULT_LON,
-    tilt: o.tilt,
-    azimuth: o.azimuth,
-    kwp: state.plant.panel_kwp ?? state.plant.capacity_w / 1000,
-    inverterW: state.plant.capacity_w || 3500,
-  };
-  if (!(setup.kwp > 0)) return null;
+  const setup = panelSetup(env, state.plant);
+  if (!setup) return null;
 
   // What the plant actually made on recent days, to calibrate against.
   const actual: Record<string, number> = {};
@@ -352,7 +344,7 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
     sun: { sunrise, sunset },
     today: {
       series: curve.points,
-      produced_wh: curve.produced_wh,
+      produced_wh: mapping.yieldTodayWh(flow) ?? mapping.reportDayWh(monthReport, d) ?? curve.produced_wh,
       earned: null,
       peak_w: curve.peak_w,
       peak_at: curve.peak_at,
@@ -379,9 +371,23 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
       const [yy, ym, yd] = mapping.civilYesterday(y, m, d);
       const rawYesterday = await client.historyRawDay(stationId, vars, yy, ym, yd);
       const ycurve = mapping.curveFromHistory(rawYesterday, hasMeter);
-      state.today.vs_yesterday_wh =
-        state.today.produced_wh - mapping.energyUpTo(ycurve.points, mapping.localHHMM(now));
-      state.yesterday = { series: ycurve.points, produced_wh: ycurve.produced_wh };
+      // Yesterday's counter total. On the 1st it lives in the previous
+      // month's report; scale the curve to match so "by now" compares AC to AC.
+      let yCounter = d > 1 ? mapping.reportDayWh(monthReport, d - 1) : null;
+      if (d === 1) {
+        try {
+          const prevMonthReport = await client.historyReport(stationId, "month", ["generation"], yy, ym);
+          yCounter = mapping.reportDayWh(prevMonthReport, yd);
+        } catch {
+          // Fall back to comparing both raw DC curves below.
+        }
+      }
+      const cutoff = mapping.localHHMM(now);
+      const yesterdayByNow = mapping.energyUpTo(ycurve.points, cutoff);
+      const scale = yCounter !== null && ycurve.produced_wh > 0 ? yCounter / ycurve.produced_wh : 1;
+      const todayComparable = yCounter !== null ? state.today.produced_wh : mapping.energyUpTo(curve.points, cutoff);
+      state.today.vs_yesterday_wh = todayComparable - yesterdayByNow * scale;
+      state.yesterday = { series: ycurve.points, produced_wh: yCounter ?? ycurve.produced_wh };
     } catch {
       // non-essential
     }

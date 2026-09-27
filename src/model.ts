@@ -44,12 +44,24 @@ export interface SkyPoint {
   temp: number; // °C
 }
 
+/** A day's weather in brief, from Open-Meteo's daily values. */
+export interface DayWeather {
+  code: number | null; // WMO; the day's most significant weather, so a single shower counts
+  cloud_pct: number | null; // mean over 24 h
+  precip_mm: number | null;
+  temp_min: number | null; // °C
+  temp_max: number | null;
+}
+
 export interface ForecastDay {
   date: string;
   expected_wh: number;
   clear_wh: number;
   weather_code: number | null; // WMO code
   cloud_pct: number | null; // daylight average
+  temp_min: number | null; // °C
+  temp_max: number | null;
+  precip_mm: number | null;
   series: ForecastPoint[]; // today only; empty for tomorrow
   sky: SkyPoint[]; // today only, hourly around the clock; empty for tomorrow
 }

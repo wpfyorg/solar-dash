@@ -137,7 +137,7 @@ export function loginPageHtml(opts: { error?: boolean } = {}): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Solar dashboard — sign in</title>
+<title>Solar</title>
 <style>
   @font-face {
     font-family: 'Schibsted Grotesk';
@@ -223,13 +223,13 @@ export function loginPageHtml(opts: { error?: boolean } = {}): string {
 </head>
 <body>
   <main class="card">
-    <h1>Solar dashboard</h1>
-    <p class="lead">Enter the password to see your solar dashboard.</p>
+    <h1>Solar</h1>
+    <p class="lead">Enter the dashboard password.</p>
     ${errorBlock}
     <form method="POST" action="/login">
       <label for="password">Password</label>
       <input id="password" name="password" type="password" autocomplete="current-password" autofocus required>
-      <button type="submit">Sign in</button>
+      <button type="submit">Open dashboard</button>
     </form>
   </main>
 </body>

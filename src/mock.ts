@@ -130,7 +130,7 @@ export function mockPoll(
 
   const today: Today = {
     series: curve.points,
-    produced_wh: curve.produced_wh,
+    produced_wh: mapping.yieldTodayWh(fx.flow) ?? mapping.reportDayWh(fx.month, d) ?? curve.produced_wh,
     earned: null,
     peak_w: curve.peak_w,
     peak_at: curve.peak_at,
@@ -148,8 +148,12 @@ export function mockPoll(
   if (doYesterday && fx.rawYesterday.length > 0) {
     const ycurve = mapping.curveFromHistory(fx.rawYesterday, hasMeter);
     const cutoff = mapping.localHHMM(now);
-    today.vs_yesterday_wh = today.produced_wh - mapping.energyUpTo(ycurve.points, cutoff);
-    yesterday = { series: ycurve.points, produced_wh: ycurve.produced_wh };
+    const yCounter = d > 1 ? mapping.reportDayWh(fx.month, d - 1) : null;
+    const yesterdayByNow = mapping.energyUpTo(ycurve.points, cutoff);
+    const scale = yCounter !== null && ycurve.produced_wh > 0 ? yCounter / ycurve.produced_wh : 1;
+    const todayComparable = yCounter !== null ? today.produced_wh : mapping.energyUpTo(curve.points, cutoff);
+    today.vs_yesterday_wh = todayComparable - yesterdayByNow * scale;
+    yesterday = { series: ycurve.points, produced_wh: yCounter ?? ycurve.produced_wh };
   }
 
   let month = { month: 0, year: 0, days: [], total_wh: 0, best_day: null } as State["month"];

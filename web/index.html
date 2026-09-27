@@ -38,7 +38,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
   --focus: var(--ink);
   --gap: 64px;
   --rail: 240px;
@@ -62,7 +62,7 @@
     --alert: #F08A80; --alert-soft: #3A1F24;
     --warn: #F2C46A; --warn-soft: #33291A;
     --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
   }
 }
 :root[data-theme="dark"] {
@@ -72,7 +72,7 @@
   --alert: #F08A80; --alert-soft: #3A1F24;
   --warn: #F2C46A; --warn-soft: #33291A;
   --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun-core: rgba(255, 220, 150, 0.30); --moon-glow: rgba(185, 205, 245, 0.10); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
 }
 :root[data-theme="light"] {
   --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
@@ -81,7 +81,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.15); --sun-glow: rgba(255, 190, 70, 0.34); --sun-core: rgba(255, 206, 110, 0.55); --moon-glow: rgba(120, 150, 210, 0.16); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
@@ -232,17 +232,46 @@ button:active:not(:disabled) { transform: scale(0.97); }
    15-minute forecast for this hour. Soft shapes only, behind the content,
    animating transform/opacity. Sizes use container units so drift and fall
    distances follow the card. Reduced motion freezes everything in place. */
-.sky-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; container-type: size; }
+.sky-fx { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; container-type: size;
+  /* The sun's centre, measured from the card's top-right corner. placeSun()
+     sets it to the current-weather icon, so the icon reads as the light
+     source; these values are only the fallback. */
+  --sun-w: min(70cqw, 640px); --sun-cx: calc(var(--sun-w) / 2 - 12cqw); --sun-cy: calc(var(--sun-w) / 2 - 38cqh); }
 .sky-fx > * { position: absolute; }
-.fx-sun { right: -12cqw; top: -38cqh; width: min(70cqw, 640px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(closest-side, var(--sun-glow), transparent 72%); animation: sun-breathe 9s ease-in-out infinite alternate; }
+/* Weather gathers around the weather readout (top right) and fades out
+   before it reaches the headline figures or the chart, so the data always
+   sits on a clean surface. Fog is the exception: it hangs over everything,
+   thinning toward the bottom. */
+.sky-fx { -webkit-mask: radial-gradient(ellipse 70% 95% at 80% 0%, #000 30%, transparent 100%); mask: radial-gradient(ellipse 70% 95% at 80% 0%, #000 30%, transparent 100%); }
+.sky-fx.sky-fog { -webkit-mask: linear-gradient(#000 20%, transparent 95%); mask: linear-gradient(#000 20%, transparent 95%); }
+.sky-fx.night { -webkit-mask: linear-gradient(#000 25%, transparent 80%); mask: linear-gradient(#000 25%, transparent 80%); }
+/* The phone card is tall, so keep the weather to its top third. */
+@media (max-width: 600px) {
+  .sky-fx { -webkit-mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); mask: radial-gradient(ellipse 100% 55% at 80% 0%, #000 30%, transparent 100%); }
+}
+/* Light falls off on an eased curve (many stops, not two), so there's no
+   visible ring where a linear gradient would end. */
+.fx-sun, .fx-halo { --sun-fade: radial-gradient(closest-side, var(--sun-glow) 0%, color-mix(in srgb, var(--sun-glow) 82%, transparent) 14%, color-mix(in srgb, var(--sun-glow) 62%, transparent) 28%, color-mix(in srgb, var(--sun-glow) 42%, transparent) 42%, color-mix(in srgb, var(--sun-glow) 26%, transparent) 56%, color-mix(in srgb, var(--sun-glow) 14%, transparent) 70%, color-mix(in srgb, var(--sun-glow) 6%, transparent) 84%, transparent 100%); }
+.fx-sun, .fx-halo { right: calc(var(--sun-cx) - var(--sun-w) / 2); top: calc(var(--sun-cy) - var(--sun-w) / 2); width: var(--sun-w); }
+.fx-sun { aspect-ratio: 1; border-radius: 50%; background: var(--sun-fade); animation: sun-breathe 9s ease-in-out infinite alternate; }
 .sky-fair .fx-sun { opacity: 0.8; }
 .sky-cloudy .fx-sun { opacity: 0.55; }
-.fx-rays { right: -12cqw; top: -38cqh; width: min(70cqw, 640px); aspect-ratio: 1; border-radius: 50%; opacity: 0.5;
-  background: repeating-conic-gradient(from 0deg, var(--sun-glow) 0deg 3deg, transparent 3deg 18deg);
-  -webkit-mask: radial-gradient(closest-side, #000 18%, transparent 70%); mask: radial-gradient(closest-side, #000 18%, transparent 70%);
-  animation: sun-spin 140s linear infinite; }
+/* Clear sky adds a wide, faint halo that breathes out of step with the core,
+   so the light swells softly instead of spinning. */
+.fx-halo { aspect-ratio: 1; border-radius: 50%; opacity: 0.5; transform: scale(1.6);
+  background: var(--sun-fade);
+  animation: halo-breathe 13s ease-in-out infinite alternate; }
+/* A still, luminous core right behind the icon. Only the glow and halo
+   breathe, so the sun itself stays put. */
+.fx-disc { right: calc(var(--sun-cx) - 110px); top: calc(var(--sun-cy) - 110px); width: 220px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--sun-core) 0%, color-mix(in srgb, var(--sun-core) 82%, transparent) 14%, color-mix(in srgb, var(--sun-core) 62%, transparent) 28%, color-mix(in srgb, var(--sun-core) 42%, transparent) 42%, color-mix(in srgb, var(--sun-core) 26%, transparent) 56%, color-mix(in srgb, var(--sun-core) 14%, transparent) 70%, color-mix(in srgb, var(--sun-core) 6%, transparent) 84%, transparent 100%); }
+/* Night: a faint, cool moonlight on the same spot and curve, no motion. */
+.fx-moon { right: calc(var(--sun-cx) - 200px); top: calc(var(--sun-cy) - 200px); width: 400px; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--moon-glow) 0%, color-mix(in srgb, var(--moon-glow) 62%, transparent) 28%, color-mix(in srgb, var(--moon-glow) 26%, transparent) 56%, color-mix(in srgb, var(--moon-glow) 6%, transparent) 84%, transparent 100%); }
+.sky-fair .fx-disc { opacity: 0.7; }
+.sky-cloudy .fx-disc { opacity: 0.4; }
 @keyframes sun-breathe { from { transform: scale(0.94); } to { transform: scale(1.06); } }
-@keyframes sun-spin { to { transform: rotate(360deg); } }
+@keyframes halo-breathe { from { opacity: 0.3; transform: scale(1.5); } to { opacity: 0.6; transform: scale(1.7); } }
 .fx-cloud { left: 0; top: var(--top); width: var(--w); height: calc(var(--w) * 0.36); transform: translateX(var(--rest)); animation: cloud-drift var(--dur) linear infinite; animation-delay: var(--delay); filter: blur(10px); }
 .fx-cloud::before, .fx-cloud::after, .fx-cloud i { content: ""; position: absolute; border-radius: 50%; background: var(--cloud); }
 .fx-cloud::before { left: 0; bottom: 0; width: 100%; height: 62%; }
@@ -250,7 +279,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .fx-cloud i { left: 48%; bottom: 20%; width: 38%; height: 70%; }
 .fx-cloud.heavy::before, .fx-cloud.heavy::after, .fx-cloud.heavy i { background: var(--cloud-heavy); }
 @keyframes cloud-drift { from { transform: translateX(calc(-1 * var(--w))); } to { transform: translateX(100cqw); } }
-.fx-fog { left: -40cqw; width: 180cqw; height: 26cqh; top: var(--top); background: linear-gradient(90deg, transparent, var(--cloud-heavy) 30%, var(--cloud) 55%, var(--cloud-heavy) 75%, transparent); filter: blur(14px); animation: fog-drift var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
+.fx-fog { left: -30cqw; width: 160cqw; height: 44cqh; top: var(--top); background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--cloud-heavy), transparent 100%); animation: fog-drift var(--dur) ease-in-out infinite alternate; animation-delay: var(--delay); }
 @keyframes fog-drift { from { transform: translateX(-12cqw); } to { transform: translateX(12cqw); } }
 .fx-drop { top: -40px; left: var(--x); width: 1.5px; height: var(--len); border-radius: 1px; background: linear-gradient(to bottom, transparent, var(--rain)); transform: rotate(12deg); animation: rain-fall var(--dur) linear infinite; animation-delay: var(--delay); }
 @keyframes rain-fall { from { transform: translate3d(0, 0, 0) rotate(12deg); } to { transform: translate3d(-22cqh, calc(100cqh + 80px), 0) rotate(12deg); } }
@@ -276,16 +305,12 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .ledger { display: flex; gap: 32px; }
 @media (max-width: 600px) { .ledger { flex-wrap: wrap; gap: 20px 24px; } }
 @media (max-width: 480px) { .ledger { gap: 20px 16px; } }
-.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 120px; }
+.ledger .cell { border-top: 1px solid var(--mist); padding-top: 12px; flex: 1 1 0; min-width: 0; }
 @media (max-width: 480px) { .ledger .cell { flex: 1 1 40%; } }
 .ledger .cell .figure { font-size: var(--fs-ledger); font-weight: 600; letter-spacing: -0.01em; }
+.ledger-icon { width: 26px; height: 26px; margin-right: 8px; vertical-align: -3px; }
 .ledger .cell .figure .unit { font-size: 17px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
-/* nowrap only where a cell is actually wide enough for it (desktop, four
-   ~190px+ cells) — at tablet widths the same four-cells-in-a-row layout
-   gives each cell only ~150px, so a forced nowrap just overflows into the
-   next cell instead of wrapping, running two labels together. */
-.ledger .cell .label { font-size: var(--fs-body); color: var(--ink-soft); margin-top: 6px; }
-@media (min-width: 1100px) { .ledger .cell .label { white-space: nowrap; } }
+.ledger .cell .label { font-size: var(--fs-body); line-height: 1.35; color: var(--ink-soft); margin-top: 6px; text-wrap: pretty; }
 
 /* month body: calendar + stats column */
 /* Grid, not flex: the chart/calendar column is `max-content` (its own
@@ -338,22 +363,47 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .year-labels span { flex: 1 1 0; text-align: center; font-size: var(--fs-small); color: var(--ink-soft); }
 .year-labels span.current { color: var(--ink); font-weight: 600; }
 
-/* system section: a status headline, then label/value rows */
-.sys-status { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; margin: 0 0 20px; }
+/* System: current state is a headline above the log, the table holds only
+   the log, and fixed metadata recedes into a footer. */
+@media (min-width: 1100px) {
+  .system-row { display: block; }
+  .system-row .section-head { margin-bottom: 16px; }
+}
+.sys-body { min-width: 0; }
+.sys-status { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 20px; }
+.sys-status .headline { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .sys-status .dot { width: 10px; height: 10px; }
-.sys-status.alert { color: var(--alert); }
+.sys-status .detail { color: var(--ink-soft); }
+.sys-status.alert .headline { color: var(--alert); }
 .sys-status.alert .dot { background: var(--alert); }
 .sys-status.rest .dot { background: transparent; border: 1.5px solid var(--ink-soft); }
-.sys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; margin: 0; }
-@media (max-width: 700px) { .sys-grid { grid-template-columns: 1fr; } }
-.sys-grid > div { border-top: 1px solid var(--mist); padding: 12px 0 14px; }
-.sys-grid dt { font-size: var(--fs-small); color: var(--ink-soft); margin: 0 0 3px; }
-.sys-grid dd { margin: 0; font-size: 17px; font-weight: 500; }
-.sys-grid dd .more { display: block; font-size: var(--fs-body); font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
-.sys-foot { font-size: var(--fs-small); color: var(--ink-soft); margin: 16px 0 0; }
-.log { margin: 0 0 36px; }
-.log-head { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
-.log-empty { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+.sys-log-head { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.sys-table-wrap { overflow-x: auto; border-top: 1px solid var(--mist); border-bottom: 1px solid var(--mist); }
+.sys-table { width: 100%; min-width: 620px; border-collapse: collapse; table-layout: fixed; }
+.sys-table col.when { width: 170px; }
+.sys-table col.event { width: 210px; }
+.sys-table thead th { padding: 8px 12px 8px 0; text-align: left; color: var(--ink-soft); font-size: 12px; font-weight: 500; }
+.sys-table td { padding: 12px 12px 12px 0; vertical-align: top; border-top: 1px solid var(--mist); }
+.sys-table .when { font-size: var(--fs-small); }
+.sys-table .when strong { display: block; color: var(--ink); font-weight: 600; }
+.sys-table .when span { display: block; color: var(--ink-soft); }
+.sys-table .event { display: flex; align-items: flex-start; gap: 9px; font-weight: 600; }
+.sys-table .event .log-icon { flex: none; margin-top: 2px; color: var(--ink-soft); }
+.sys-table tr.power_cut .log-icon, .sys-table tr.alarm .log-icon { color: var(--alert); }
+.sys-table tr.ongoing .event { color: var(--alert); }
+.sys-table .detail { color: var(--ink-soft); }
+.sys-table .empty { color: var(--ink-soft); }
+.sys-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 22px; margin-top: 18px; font-size: 12px; }
+.sys-meta-item { display: inline-flex; align-items: baseline; gap: 6px; }
+.sys-meta .k { color: var(--ink-soft); }
+.sys-meta .v { color: var(--ink); font-size: var(--fs-small); font-weight: 500; }
+.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
+@media (max-width: 600px) {
+  .sys-table { min-width: 560px; }
+  .sys-table col.when { width: 125px; }
+  .sys-table col.event { width: 155px; }
+}
+/* Day-detail logs keep the compact stacked list treatment. */
 .log-list { list-style: none; margin: 0; padding: 0; }
 .log-row { display: grid; grid-template-columns: 150px 20px 1fr; gap: 4px 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--mist); }
 .log-when { display: flex; flex-direction: column; font-size: var(--fs-small); }
@@ -364,7 +414,6 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .log-what b { display: block; font-weight: 600; }
 .log-what span { color: var(--ink-soft); }
 .log-row.ongoing .log-what b { color: var(--alert); }
-.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
 @media (max-width: 480px) { .log-row { grid-template-columns: 20px 1fr; } .log-when { grid-column: 1 / -1; flex-direction: row; gap: 8px; } }
 /* month navigation + clickable days/bars */
 .month-rail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -388,7 +437,7 @@ button:active:not(:disabled) { transform: scale(0.97); }
 /* day detail dialog */
 .day-dialog { border: none; padding: 0; background: transparent; color: var(--ink); max-width: none; max-height: none; width: min(760px, calc(100vw - 32px)); overflow: visible; }
 .day-dialog::backdrop { background: rgba(14, 23, 38, 0.45); }
-.day-card { background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
+.day-card { max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--paper); border-radius: 24px; padding: 24px 28px 28px; box-shadow: 0 20px 60px rgba(14, 23, 38, 0.25); }
 .day-top { display: flex; align-items: center; gap: 8px; }
 .day-top h2 { font-size: var(--fs-head); font-weight: 600; margin: 0; flex: 1 1 auto; min-width: 0; }
 .day-top .sub { display: block; font-size: var(--fs-small); color: var(--ink-soft); font-weight: 400; margin-top: 2px; }
@@ -400,6 +449,9 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .day-chart .axis { font-size: 12px; fill: var(--ink-soft); }
 .day-chart .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ink-soft); font-size: var(--fs-body); text-align: center; }
 .day-chart .msg button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.day-log { margin-top: 18px; }
+.day-log .log-row { grid-template-columns: 130px 20px 1fr; }
+@media (max-width: 480px) { .day-log .log-row { grid-template-columns: 20px 1fr; } }
 .day-tip { position: absolute; top: 0; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 6px 9px; font-size: var(--fs-small); pointer-events: none; display: none; white-space: nowrap; }
 @media (max-width: 600px) {
   .day-dialog { width: 100vw; margin: auto 0 0; }
@@ -463,8 +515,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
           <div class="hero-right">
             <div class="chart-legend" aria-hidden="true"><span><i class="made"></i>made</span><span><i class="fc"></i>forecast</span><span><i class="clear"></i>clear sky</span></div>
             <div class="view-toggle" id="view-toggle" role="group" aria-label="Chart view" style="display:none">
-              <button type="button" data-view="curve" aria-pressed="true">Curve</button>
-              <button type="button" data-view="hourly" aria-pressed="false">Per hour</button>
+              <button type="button" data-view="curve" aria-pressed="true">Power</button>
+              <button type="button" data-view="hourly" aria-pressed="false">By hour</button>
             </div>
             <div class="arc-wrap" id="arc-wrap">
               <svg id="arc-svg" viewBox="0 0 1000 400" role="img" tabindex="0" aria-label="Today's output from sunrise to sunset, with the weather forecast and a clear-sky day for comparison">
@@ -535,8 +587,8 @@ button:active:not(:disabled) { transform: scale(0.97); }
         </div>
       </div>
 
-      <div class="section-row">
-        <h2 class="section-head">Your system</h2>
+      <div class="section-row system-row">
+        <h2 class="section-head">System</h2>
         <div class="sys-body" id="sys-body"></div>
       </div>
       <div class="tooltip" id="cal-tooltip"></div>
@@ -554,13 +606,14 @@ button:active:not(:disabled) { transform: scale(0.97); }
             <div class="day-tip" id="day-tip"></div>
             <div class="msg" id="day-msg" style="display:none"></div>
           </div>
+          <div class="day-log" id="day-log"></div>
         </div>
       </dialog>
     </main>
 
     <div class="center-panel" id="unconfigured-view" style="display:none">
       <div class="center-card">
-        <h2>Almost there</h2>
+        <h2>Finish setup</h2>
         <p>Add your WAAREE sign-in as Cloudflare secrets by running this from the project folder, then reload.</p>
         <code>scripts/set-secrets.sh</code>
         <button id="reload-btn">Reload</button>
@@ -820,6 +873,23 @@ function renderWeather(isNight) {
   if (el.__html !== out) { el.__html = out; el.innerHTML = out; el.hidden = !out; }
 }
 
+// Centre the backdrop's sun on the current-weather icon. Runs every render
+// (two rect reads) and on resize, and only writes when the spot moves.
+let sunAt = '';
+function placeSun() {
+  const fx = $('sky-fx'), icon = document.querySelector('#hero-weather .wx-now svg');
+  if (!icon || !fx.firstChild) return;
+  const a = fx.getBoundingClientRect(), b = icon.getBoundingClientRect();
+  if (!b.width) return;
+  const cx = Math.round(a.right - (b.left + b.width / 2)), cy = Math.round(b.top + b.height / 2 - a.top);
+  const at = `${cx},${cy}`;
+  if (at === sunAt) return;
+  sunAt = at;
+  fx.style.setProperty('--sun-cx', cx + 'px');
+  fx.style.setProperty('--sun-cy', cy + 'px');
+}
+addEventListener('resize', placeSun);
+
 let skyKey = '';
 function renderSky(sky, isNight) {
   const kind = sky ? sky.kind : null;
@@ -835,8 +905,9 @@ function renderSky(sky, isNight) {
   const f1 = (n) => n.toFixed(1);
   let h = '';
   const fine = kind === 'clear' || kind === 'fair' || kind === 'cloudy';
-  if (fine && !isNight) h += '<div class="fx-sun"></div>' + (kind === 'clear' ? '<div class="fx-rays"></div>' : '');
+  if (fine && !isNight) h += '<div class="fx-sun"></div>' + (kind === 'clear' ? '<div class="fx-halo"></div>' : '') + '<div class="fx-disc"></div>';
   if (fine && isNight) {
+    h += '<div class="fx-moon"></div>';
     const n = kind === 'clear' ? 28 : kind === 'fair' ? 18 : 9;
     for (let i = 0; i < n; i++) {
       const dur = 2 + rnd() * 3;
@@ -844,7 +915,7 @@ function renderSky(sky, isNight) {
     }
   }
   if (kind === 'fog') {
-    for (let i = 0; i < 4; i++) h += `<div class="fx-fog" style="--top:${f1(8 + i * 22)}%;--dur:${f1(26 + rnd() * 20)}s;--delay:${f1(-rnd() * 30)}s"></div>`;
+    for (let i = 0; i < 4; i++) h += `<div class="fx-fog" style="--top:${f1(-14 + i * 20)}%;--dur:${f1(26 + rnd() * 20)}s;--delay:${f1(-rnd() * 30)}s"></div>`;
   }
   const clouds = { fair: 2, cloudy: 4, overcast: 6, fog: 1, drizzle: 5, rain: 6, storm: 7 }[kind] || 0;
   const heavy = kind === 'overcast' || kind === 'rain' || kind === 'storm';
@@ -967,7 +1038,7 @@ function renderHero(isNight) {
       $('hero-fc-label').textContent = 'expected tomorrow';
     } else {
       $('v-forecast').innerHTML = html(fmtEnergy(state.yesterday.produced_wh || 0));
-      $('hero-fc-label').textContent = 'yesterday, all day';
+      $('hero-fc-label').textContent = 'yesterday';
     }
   }
 
@@ -975,6 +1046,7 @@ function renderHero(isNight) {
   const noteHtml = diag ? `<svg width="16" height="16" viewBox="0 0 20 20"><use href="#ic-alert"/></svg><div><b>${esc(diag.title)}</b><span>${esc(diag.detail)}</span></div>` : '';
   if (note.__html !== noteHtml) { note.__html = noteHtml; note.innerHTML = noteHtml; note.classList.toggle('show', !!diag); }
   renderSky(skyNow(), isNight);
+  placeSun();
 
   drawArc(isNight);
 
@@ -1245,13 +1317,14 @@ function renderLedger(isNight) {
     figure: t.earned != null ? fmtCurrency(t.earned) : '–',
     label: price ? `worth today, at ${fmtCurrencyPrecise(price)} a unit` : 'worth today',
   });
-  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak, at ${to12h(t.peak_at)}` : 'peak' });
+  cells.push({ figure: t.peak_w ? html(fmtPower(t.peak_w)) : '–', label: t.peak_at ? `peak at ${to12h(t.peak_at)}` : 'peak' });
   const tm = forecastTomorrow();
   if (tm) {
-    const w = weatherLabel(tm.weather_code);
-    cells.push({ figure: `~${html(fmtEnergy(tm.expected_wh))}`, label: `tomorrow${w ? ', ' + w : ''}` });
+    const w = dayWeatherPhrase({ code: tm.weather_code, cloud_pct: tm.cloud_pct, precip_mm: tm.precip_mm, temp_min: tm.temp_min, temp_max: tm.temp_max });
+    const icon = wxIcon(skyKind(tm.weather_code, tm.cloud_pct), false).replace('class="wx-icon', 'class="wx-icon ledger-icon');
+    cells.push({ figure: `${icon}~${html(fmtEnergy(tm.expected_wh))}`, label: w ? `tomorrow · ${w[0].toLowerCase()}${w.slice(1)}` : 'tomorrow' });
   }
-  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday, all day' });
+  cells.push({ figure: html(fmtEnergy(state.yesterday.produced_wh || 0)), label: 'yesterday' });
   $('ledger').innerHTML = cells.map(c => `<div class="cell"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
 }
 // ---- month browsing ----
@@ -1352,10 +1425,10 @@ function renderCalendar() {
   // Average over finished days only — today's partial total would drag it down.
   const doneDays = days.filter(d => d.produced_wh != null && !(isCurrent && d.day === now.getUTCDate()));
   if (doneDays.length >= 2) {
-    stats.push({ figure: html(fmtEnergy(doneDays.reduce((a, d) => a + d.produced_wh, 0) / doneDays.length)), label: 'on an average day' });
+    stats.push({ figure: html(fmtEnergy(doneDays.reduce((a, d) => a + d.produced_wh, 0) / doneDays.length)), label: 'average day' });
   }
   if (month.best_day) {
-    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day, ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
+    stats.push({ figure: html(fmtEnergy(month.best_day.produced_wh)), label: `best day · ${month.best_day.day} ${MONTH_NAMES[vm-1]}` });
   }
   const statsHtml = stats.map(s => `<div class="stat"><div class="figure">${s.figure}</div><div class="label">${s.label}</div></div>`).join('');
   if ($('month-stats').__html !== statsHtml) { $('month-stats').__html = statsHtml; $('month-stats').innerHTML = statsHtml; }
@@ -1428,72 +1501,61 @@ function renderSystem(isNight) {
   const p = state.plant;
   const d = devs[0];
   let out = '';
+  let statusClass = '';
+  let statusTitle = '';
+  let statusDetail = '';
 
-  // Headline: one plain sentence about whether anything needs attention.
+  // Current status becomes the first row in the system table.
   if (!d) {
-    out += `<p class="sys-status rest"><span class="dot"></span>Waiting for inverter details from WAAREE.</p>`;
+    statusClass = 'rest';
+    statusTitle = 'Waiting';
+    statusDetail = 'Inverter details have not arrived from WAAREE yet.';
   } else if (alarms.length) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. The log below has the details.</p>`;
+    statusClass = 'alert';
+    statusTitle = alarms.length === 1 ? '1 alarm today' : `${alarms.length} alarms today`;
+    statusDetail = 'The inverter needs attention.';
   } else if (diag) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${esc(diag.title)}</p>`;
+    statusClass = 'alert';
+    statusTitle = esc(diag.title);
+    statusDetail = 'The latest readings need attention.';
   } else if (d.status === 2) {
-    out += `<p class="sys-status alert"><span class="dot"></span>The inverter is reporting a fault.</p>`;
+    statusClass = 'alert';
+    statusTitle = 'Inverter fault';
+    statusDetail = 'The inverter is reporting a fault.';
   } else if (d.status !== 1 && isNight) {
     // An inverter is always "offline" at night; not something to flag.
-    out += `<p class="sys-status rest"><span class="dot"></span>All quiet. The inverter sleeps until sunrise.</p>`;
+    statusClass = 'rest';
+    statusTitle = 'All quiet';
+    statusDetail = 'The inverter sleeps until sunrise.';
   } else if (d.status !== 1) {
-    out += `<p class="sys-status alert"><span class="dot"></span>The inverter is offline.</p>`;
+    statusClass = 'alert';
+    statusTitle = 'Inverter offline';
+    statusDetail = 'No live inverter connection right now.';
   } else {
-    out += `<p class="sys-status"><span class="dot"></span>All good. The inverter is online, with no alarms today.</p>`;
+    statusTitle = 'All good';
+    statusDetail = 'Inverter online · no alarms today.';
   }
 
+  // Only the few facts worth knowing at a glance: what's on the roof,
+  // what converts it, and since when.
   const rows = [];
   const kwp = p.panel_kwp;
   if (p.panel_count && p.panel_w) {
-    rows.push(['Panels', `${p.panel_count} × ${fmtIN(0).format(p.panel_w)} W`, `${fmtIN(2).format(kwp)} kWp in total`]);
+    rows.push(['Panels', `${p.panel_count} × ${fmtIN(0).format(p.panel_w)} W (${fmtIN(2).format(kwp)} kWp)`]);
   } else if (kwp) {
-    rows.push(['Panels', `${fmtIN(1).format(kwp)} kWp`, '']);
+    rows.push(['Panels', `${fmtIN(1).format(kwp)} kWp`]);
   }
   const invKw = (p.capacity_w || 0) / 1000;
   if (invKw || d) {
     const brand = d && !isGenericType(d.device_type) ? esc(d.device_type) : 'WAAREE';
-    let more = '';
-    // Panels bigger than the inverter is normal (and sensible), but it
-    // explains why a bright midday flattens at the inverter's limit.
-    if (kwp && invKw && kwp > invKw * 1.02) {
-      more = `Panels are ${Math.round((kwp / invKw - 1) * 100)}% bigger, so bright middays top out at ${fmtIN(1).format(invKw)} kW`;
-    }
-    rows.push(['Inverter', `${brand}${invKw ? `, ${fmtIN(1).format(invKw)} kW` : ''}`, more]);
+    rows.push(['Inverter', `${brand}${invKw ? `, ${fmtIN(1).format(invKw)} kW` : ''}`]);
   }
-  if (p.install_date) {
-    const utc = (iso) => { const [y, m, dd] = iso.split('-').map(Number); return Date.UTC(y, m - 1, dd); };
-    const days = Math.round((utc(todayIso()) - utc(p.install_date)) / 86400000);
-    rows.push(['Installed', fmtDateLong(p.install_date, true), days >= 0 ? `${fmtIN(0).format(days)} days ago` : '']);
-  }
-  // Yield per kWp is the fair way to compare against other systems: a good
-  // sunny day in India is around 4.5–5.5 kWh per kWp.
-  if (kwp) {
-    const todayY = (state.today.produced_wh || 0) / 1000 / kwp;
-    const cm = curYm()[1];
-    const done = (state.month.days || []).filter(x => x.produced_wh != null && x.day !== istNow().getUTCDate());
-    const avgY = done.length ? done.reduce((a, x) => a + x.produced_wh, 0) / done.length / 1000 / kwp : null;
-    rows.push(['Output per kWp', `${fmtIN(1).format(todayY)} kWh ${isNight ? 'today' : 'so far today'}`,
-      avgY != null ? `${fmtIN(1).format(avgY)} kWh on an average day in ${MONTH_FULL[cm - 1]}` : '']);
-  }
-  const f = state.forecast;
-  if (f) {
-    const how = f.pr_days >= 3
-      ? `Tuned to what your panels really made over the last ${f.pr_days} days`
-      : `It tunes itself to your panels once it has a few days to learn from`;
-    rows.push(['Forecast', f.source === 'mock' ? 'Sample weather (mock mode)' : 'Open-Meteo, updated hourly', how]);
-  }
-  if (d && d.sn) rows.push(['Inverter serial', `ends in ${esc(d.sn.slice(-6))}`, '']);
+  if (p.install_date) rows.push(['Installed', fmtDateLong(p.install_date, true)]);
 
-  // Status, then the log, then the fixed details.
-  out += renderLog();
-  out += `<h3 class="log-head">Details</h3>`;
-  out += `<dl class="sys-grid">${rows.map(([k, v, more]) => `<div><dt>${k}</dt><dd>${v}${more ? `<span class="more">${more}</span>` : ''}</dd></div>`).join('')}</dl>`;
-  out += `<p class="sys-foot">Figures come from WAAREE every 5 minutes.${state.has_meter ? '' : ' Add an energy meter to see what your home uses and what goes to the grid.'}</p>`;
+  out += renderSystemTable(statusClass, statusTitle, statusDetail);
+  if (rows.length) {
+    out += `<footer class="sys-meta" aria-label="System details">${rows.map(([k, v]) => `<span class="sys-meta-item"><span class="k">${k}</span><span class="v">${v}</span></span>`).join('')}</footer>`;
+  }
   const body = $('sys-body');
   if (body.__html !== out) {
     body.__html = out; body.innerHTML = out;
@@ -1521,32 +1583,42 @@ function logLine(e) {
   const mins = hhmmToMin(e.to) - hhmmToMin(e.from);
   const lost = e.lost_wh != null && e.lost_wh >= 100 ? ` About ${fmtKwh(e.lost_wh)} missed.` : '';
   const title = e.kind === 'no_data' ? 'Inverter went quiet' : 'Power cut';
-  const why = e.kind === 'no_data' ? 'No readings reached WAAREE.' : 'The panels made nothing while the inverter stayed online.';
+  const why = e.kind === 'no_data' ? 'WAAREE stopped receiving readings.' : 'The inverter stayed online, but the panels produced nothing.';
   return {
     icon: e.kind === 'no_data' ? 'ic-clock' : 'ic-alert', cls: e.kind, title,
     at: e.ongoing ? `since ${from}` : `${from} to ${to12h(e.to)}`,
     detail: `${e.ongoing ? 'Still going.' : fmtDuration(mins) + '.'} ${why}${lost}`,
   };
 }
-function renderLog() {
+function renderSystemTable(statusClass, statusTitle, statusDetail) {
   const events = state.events || [];
-  let out = '<div class="log"><h3 class="log-head">Log</h3>';
-  if (!events.length) {
-    return out + '<p class="log-empty">Nothing to report. Power cuts, times the inverter goes quiet, and inverter alarms will show up here.</p></div>';
-  }
+  let out = `<div class="sys-status ${statusClass}" role="status">
+      <span class="headline"><span class="dot"></span>${statusTitle}</span>
+      <span class="detail">${statusDetail}</span>
+    </div>
+    <h3 class="sys-log-head">Log</h3>
+    <div class="sys-table-wrap"><table class="sys-table">
+    <caption class="visually-hidden">System log: power cuts and inverter alarms</caption>
+    <colgroup><col class="when"><col class="event"><col></colgroup>
+    <thead><tr><th scope="col">when</th><th scope="col">event</th><th scope="col">details</th></tr></thead>
+    <tbody>`;
   const shown = events.slice(0, logShown);
-  out += '<ol class="log-list">' + shown.map(e => {
+  out += shown.map(e => {
     const l = logLine(e);
-    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}">
-      <div class="log-when"><span class="d">${fmtLogDay(e.date)}</span><span class="t">${l.at}</span></div>
-      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
-      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div>
-    </li>`;
-  }).join('') + '</ol>';
+    return `<tr class="${l.cls}${e.ongoing ? ' ongoing' : ''}">
+      <td class="when"><strong>${fmtLogDay(e.date)}</strong><span>${l.at}</span></td>
+      <td><span class="event"><svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>${l.title}</span></td>
+      <td class="detail">${l.detail}</td>
+    </tr>`;
+  }).join('');
+  if (!events.length) {
+    out += '<tr><td class="empty" colspan="3">Nothing unusual so far. Power cuts and inverter problems will appear here.</td></tr>';
+  }
+  out += '</tbody></table></div>';
   if (events.length > shown.length) {
     out += `<button type="button" class="log-more" id="log-more">Load more</button>`;
   }
-  return out + '</div>';
+  return out;
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -1565,7 +1637,10 @@ function shiftDate(iso, k) {
 function dayData(iso) {
   if (iso === todayIso()) {
     const t = state.today;
-    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset };
+    const f = forecastToday();
+    return { date: iso, series: t.series || [], produced_wh: t.produced_wh, peak_w: t.peak_w, peak_at: t.peak_at, sunrise: state.sun.sunrise, sunset: state.sun.sunset,
+      weather: f ? { code: f.weather_code, cloud_pct: f.cloud_pct, precip_mm: f.precip_mm, temp_min: f.temp_min, temp_max: f.temp_max } : null,
+      events: (state.events || []).filter(e => e.date === iso) };
   }
   return dayCache.get(iso);
 }
@@ -1597,14 +1672,18 @@ function renderDay() {
   const wd = WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   const isToday = iso === todayIso();
   const yearPart = y === istNow().getUTCFullYear() ? '' : ` ${y}`;
-  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${isToday ? 'Today, so far' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : 'The whole day'}</span>`;
+  const data = dayData(iso);
+  const when = isToday ? 'so far today' : iso === shiftDate(todayIso(), -1) ? 'Yesterday' : '';
+  const sky = data && data.weather ? dayWeatherPhrase(data.weather) : '';
+  const sub = cap1([when, sky].filter(Boolean).join('. '));
+  $('day-title').innerHTML = `${wd} ${d} ${MONTH_FULL[m - 1]}${yearPart}<span class="sub">${esc(sub)}</span>`;
   $('day-next').disabled = iso >= todayIso();
   const inst = state.plant.install_date;
   $('day-prev').disabled = !!inst && iso <= inst;
 
-  const data = dayData(iso);
   const msg = $('day-msg'), svg = $('day-svg');
   $('day-tip').style.display = 'none';
+  $('day-log').innerHTML = data ? dayLogHtml(data) : '';
   if (!data) {
     $('day-stats').innerHTML = '';
     svg.innerHTML = '';
@@ -1619,18 +1698,43 @@ function renderDay() {
   const price = state.plant.price_per_kwh;
   const cells = [{ figure: html(fmtEnergy(data.produced_wh)), label: isToday ? 'made so far' : 'made' }];
   if (price) cells.push({ figure: fmtCurrency(data.produced_wh / 1000 * price), label: 'worth' });
-  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak, at ${to12h(data.peak_at)}` : 'peak' });
+  cells.push({ figure: data.peak_w ? html(fmtPower(data.peak_w)) : '–', label: data.peak_at ? `peak at ${to12h(data.peak_at)}` : 'peak' });
+  const missed = (data.events || []).reduce((a, e) => a + (e.kind !== 'alarm' && e.lost_wh ? e.lost_wh : 0), 0);
+  if (missed >= 100) cells.push({ figure: html(fmtEnergy(missed)), label: 'missed to outages' });
   $('day-stats').innerHTML = cells.map(c => `<div class="stat"><div class="figure">${c.figure}</div><div class="label">${c.label}</div></div>`).join('');
 
   const pts = (data.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
   if (!pts.some(p => p[1] > 0)) {
     svg.innerHTML = '';
     msg.style.display = 'flex';
-    msg.textContent = data.series && data.series.length ? 'The panels made nothing this day.' : 'WAAREE has no data for this day.';
+    msg.textContent = data.series && data.series.length ? 'No solar output was recorded that day.' : 'WAAREE has no data for that day.';
     return;
   }
   msg.style.display = 'none';
   drawDay(data, pts);
+}
+
+// "Mostly sunny with a little rain, 25° to 32°". Built from mean cloud and
+// rainfall rather than the WMO code, which is the day's worst moment: one
+// five-minute shower would otherwise make a sunny day read "showers".
+function dayWeatherPhrase(w) {
+  const c = w.cloud_pct;
+  let sky = c == null ? '' : c < 20 ? 'Sunny' : c < 40 ? 'Mostly sunny' : c < 65 ? 'Partly cloudy' : c < 85 ? 'Mostly cloudy' : 'Overcast';
+  const p = w.precip_mm;
+  const wet = w.code >= 95 ? 'thunderstorms' : p == null ? '' : p < 0.5 ? '' : p < 3 ? 'a little rain' : p < 10 ? 'some rain' : 'heavy rain';
+  if (!sky && wet) sky = cap1(wet); else if (wet) sky += ` with ${wet}`;
+  const temps = w.temp_min != null && w.temp_max != null ? `${Math.round(w.temp_min)}° to ${Math.round(w.temp_max)}°` : '';
+  return [sky, temps].filter(Boolean).join(', ');
+}
+function dayLogHtml(data) {
+  const events = data.events || [];
+  if (!events.length) return '';
+  return `<ol class="log-list">${events.map(e => {
+    const l = logLine(e);
+    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}"><div class="log-when"><span class="t">${l.at}</span></div>
+      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
+      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div></li>`;
+  }).join('')}</ol>`;
 }
 
 let dayGeom = null;
@@ -1664,8 +1768,10 @@ function drawDay(data, pts) {
     <defs><linearGradient id="day-fill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="var(--leaf)" stop-opacity="0.44"/><stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
     </linearGradient></defs>
-    <line x1="0" x2="${W}" y1="${y(capKw)}" y2="${y(capKw)}" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
-    <text class="axis" x="0" y="${y(capKw) - 6}">${fmtIN(1).format(capKw)} kW</text>
+    ${(data.events || []).filter(e => e.kind !== 'alarm' && e.to).map(e => {
+      const x0 = x(hhmmToMin(e.from)), w = Math.max(0, x(hhmmToMin(e.to)) - x0);
+      return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>`;
+    }).join('')}
     <line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--mist)" stroke-width="1.5"/>
     ${ticks.map(t => `<text class="axis" x="${Math.min(W, Math.max(0, x(t.m)))}" y="${H - 10}" text-anchor="${t.anchor}">${t.label}</text>`).join('')}
     <path d="${fill}" fill="url(#day-fill)"/>

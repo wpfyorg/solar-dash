@@ -38,6 +38,15 @@ describe("findOutages", () => {
     expect(out[0]).toMatchObject({ kind: "no_data", from: 700, ongoing: true });
   });
 
+  it("logs a day with no samples at all as one silence", () => {
+    const out = findOutages({ ...base, series: [], forecast: forecast(1900), nowMin: 24 * 60 });
+    expect(out).toEqual([expect.objectContaining({ kind: "no_data", from: 392, to: 995, ongoing: false })]);
+  });
+
+  it("does not call an empty day an outage before sunrise", () => {
+    expect(findOutages({ ...base, series: [], forecast: forecast(1900), nowMin: 300 })).toHaveLength(0);
+  });
+
   it("ignores zero output when the forecast expected almost nothing", () => {
     const s = series(785, (t) => (t >= 723 && t <= 770 ? 0 : 400));
     expect(findOutages({ ...base, series: s, forecast: forecast(90), nowMin: 785 })).toHaveLength(0);
