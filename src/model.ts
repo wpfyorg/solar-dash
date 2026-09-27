@@ -41,6 +41,7 @@ export interface SkyPoint {
   t: string; // "HH:MM", slot midpoint
   code: number | null; // WMO weather code
   cloud: number; // %
+  temp: number; // °C
 }
 
 export interface ForecastDay {
@@ -183,6 +184,18 @@ export interface Alarm {
   alarm_type: number;
 }
 
+/** One line in the system log (see events.ts). */
+export interface LogEvent {
+  id: string;
+  date: string; // YYYY-MM-DD, plant-local
+  kind: "power_cut" | "no_data" | "alarm";
+  from: string; // "HH:MM"
+  to: string | null; // null for alarms
+  ongoing: boolean;
+  lost_wh: number | null; // forecast output missed during the span
+  detail: string | null; // alarm text
+}
+
 export interface State {
   status: Status;
   server_now: string;
@@ -197,6 +210,7 @@ export interface State {
   devices: Device[];
   alarms: Alarm[];
   forecast: Forecast | null;
+  events: LogEvent[]; // newest first
 }
 
 export function unconfiguredState(nowIso: string): State {
@@ -214,6 +228,7 @@ export function unconfiguredState(nowIso: string): State {
     devices: [],
     alarms: [],
     forecast: null,
+    events: [],
   };
 }
 

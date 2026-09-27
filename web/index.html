@@ -38,7 +38,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: var(--ink);
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
   --focus: var(--ink);
   --gap: 64px;
   --rail: 240px;
@@ -62,7 +62,7 @@
     --alert: #F08A80; --alert-soft: #3A1F24;
     --warn: #F2C46A; --warn-soft: #33291A;
     --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+    --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
   }
 }
 :root[data-theme="dark"] {
@@ -72,7 +72,7 @@
   --alert: #F08A80; --alert-soft: #3A1F24;
   --warn: #F2C46A; --warn-soft: #33291A;
   --cal-lo: #1A2C2C; --cal-hi: #1F7A47; --cal-text: #E6EEF6;
-  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
+  --cloud: rgba(170, 190, 215, 0.10); --cloud-heavy: rgba(150, 172, 200, 0.17); --sun-glow: rgba(255, 186, 90, 0.20); --sun: #F5C451; --rain: rgba(140, 185, 230, 0.45); --star: rgba(230, 238, 246, 0.85); --flash: rgba(200, 215, 255, 0.24);
 }
 :root[data-theme="light"] {
   --sky: #EAF1F6; --paper: #F8FBFD; --ink: #15243B; --ink-soft: #5B6B80; --mist: #C8D5E1; --mist-strong: #A9B8C8;
@@ -81,7 +81,7 @@
   --alert: #B4322A; --alert-soft: #F6E2E0;
   --warn: #8A5A00; --warn-soft: #FBEFD6;
   --cal-lo: #DDF1E4; --cal-hi: #2E9E5B; --cal-text: #15243B;
-  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
+  --cloud: rgba(110, 135, 165, 0.12); --cloud-heavy: rgba(84, 104, 130, 0.2); --sun-glow: rgba(255, 190, 70, 0.34); --sun: #C98A0B; --rain: rgba(47, 111, 168, 0.42); --star: rgba(21, 36, 59, 0.3); --flash: rgba(255, 255, 255, 0.85);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; max-width: 100%; overflow-x: hidden; }
@@ -121,78 +121,76 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .center-card code { display: block; background: var(--paper); border: 1px solid var(--mist); border-radius: 8px; padding: 10px 12px; font-family: var(--mono); font-size: 13px; color: var(--ink); }
 .center-card button { margin-top: 16px; height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
 
-/* hero — a CSS grid with named areas, so the same three blocks (top
-   figure, arc/right column, bottom "so far") can be rearranged per
-   breakpoint declaratively instead of via absolute-position hacks, which
-   is what caused the mobile overlap bug (hero-sofar was absolutely
-   positioned relative to a shrink-wrapped ancestor, not the card). */
+/* hero: a header row (today's total, then "right now" and the forecast
+   stacked 50/50, then the weather on the far side), an optional note about
+   missing output, and the chart across the full width below. */
 .hero { background: var(--paper); border-radius: 28px; position: relative; overflow: hidden; isolation: isolate; }
-.hero-inner {
-  position: relative; z-index: 1; min-height: var(--hero-h);
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas: "top right" "sofar right";
-  padding: 32px 40px; gap: 8px 24px;
-}
-/* Tablet (v3-tablet.png, ~768): unlike phone, this keeps the figure and
-   "so far" side by side in a top row (not stacked), with the arc as its
-   own full-width area below — a third distinct arrangement, not just a
-   narrower desktop or a wider phone. The card's height is content-driven
-   here rather than the fixed --hero-h desktop/phone use. */
-@media (max-width: 1099px) and (min-width: 601px) {
-  .hero-inner { min-height: 0; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; grid-template-areas: "top sofar" "right right"; padding: 28px 32px; gap: 20px 24px; }
-}
+.hero-inner { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 24px; padding: 32px 40px 28px; }
+@media (max-width: 1099px) { .hero-inner { padding: 28px 32px 24px; gap: 20px; } }
+@media (max-width: 600px) { .hero-inner { padding: 22px 20px 20px; gap: 18px; } }
+@media (max-width: 480px) { .hero-inner { padding: 20px 16px 18px; } }
+.hero-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.hero-figures { display: flex; align-items: stretch; gap: 36px; min-width: 0; }
+.hero-total .num { font-size: var(--fs-live); font-weight: 600; letter-spacing: -0.03em; line-height: 0.92; }
+.hero-total .unit { font-size: var(--fs-live-unit); font-weight: 500; color: var(--ink-soft); margin-left: 8px; letter-spacing: -0.01em; }
+.hero-total .l { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 10px; }
+.hero-total .vs { color: var(--ink-soft); font-size: var(--fs-small); margin-top: 2px; }
+/* Two equal rows beside the total, split by a hairline. */
+.hero-stack { display: grid; grid-template-rows: 1fr 1fr; min-width: 170px; padding-left: 28px; border-left: 1px solid var(--mist); }
+.hero-stack .row { display: flex; flex-direction: column; justify-content: center; }
+.hero-stack .row + .row { border-top: 1px solid var(--mist); }
+.hero-stack .v { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.hero-stack .v .unit { font-size: 16px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+.hero-stack .l { font-size: var(--fs-small); color: var(--ink-soft); margin-top: 2px; }
+/* Weather, on the far side of the header. */
+.hero-weather { display: flex; align-items: center; gap: 22px; flex: none; }
+.hero-weather[hidden] { display: none; }
+.wx-now { display: flex; align-items: center; gap: 10px; }
+.wx-now svg { width: 44px; height: 44px; }
+.wx-now .temp { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.wx-hours { display: flex; gap: 16px; padding-left: 20px; border-left: 1px solid var(--mist); }
+.wx-hour { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: var(--fs-small); }
+.wx-hour .h { color: var(--ink-soft); }
+.wx-hour svg { width: 22px; height: 22px; }
+.wx-hour .temp { font-weight: 600; }
+.wx-icon { color: var(--ink-soft); }
+.wx-icon.sunny { color: var(--sun); }
+/* Tablet: weather drops its hourly strip; phone: the stack goes under the
+   total as two 50/50 columns, weather stays top-right. */
+@media (max-width: 1099px) { .wx-hours { display: none; } }
 @media (max-width: 600px) {
-  .hero-inner { min-height: 0; grid-template-columns: 1fr; grid-template-rows: auto auto auto; grid-template-areas: "top" "right" "sofar"; padding: 24px 20px; gap: 16px 0; }
+  .hero-head { flex-wrap: wrap; row-gap: 18px; }
+  .hero-figures { display: contents; }
+  .hero-total { order: 1; flex: 1 1 0; min-width: 0; }
+  .hero-weather { order: 2; }
+  .hero-stack { order: 3; flex: 1 1 100%; grid-template-rows: none; grid-template-columns: 1fr 1fr; padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--mist); }
+  .hero-stack .row + .row { border-top: 0; border-left: 1px solid var(--mist); padding-left: 16px; }
+  .hero-stack .v { font-size: 22px; }
+  .wx-now svg { width: 34px; height: 34px; }
+  .wx-now .temp { font-size: 22px; }
 }
-@media (max-width: 480px) { .hero-inner { padding: 20px 16px; } }
-/* #hero-live-wrap groups hero-top + hero-sofar only so JS can hide both
-   together for the meter variant; `display: contents` lets its own two
-   children act as direct grid items (each keeping its own grid-area)
-   instead of being sized by an intermediate box. */
-#hero-live-wrap { display: contents; }
-.hero-top { grid-area: top; position: relative; z-index: 4; }
-.hero-sofar { grid-area: sofar; align-self: end; position: relative; z-index: 4; }
-/* Tablet: "so far" sits beside the figure at the top of the row (design),
-   not pinned to the row's bottom like the desktop/phone bottom-of-card
-   placement. */
-@media (max-width: 1099px) and (min-width: 601px) { .hero-sofar { align-self: start; } }
-.hero-figure .num { font-size: var(--fs-live); font-weight: 600; letter-spacing: -0.02em; line-height: 0.92; }
-.hero-figure .unit { font-size: var(--fs-live-unit); font-weight: 500; color: var(--ink-soft); margin-left: 8px; }
-.hero-sub-mode { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 6px; }
-/* Why the panels aren't making anything, when that isn't just the weather. */
-.hero-note { display: none; gap: 10px; margin-top: 18px; padding: 12px 14px; border-radius: 14px; background: var(--warn-soft); color: var(--warn); font-size: var(--fs-small); line-height: 1.4; max-width: 34ch; }
+/* Why the panels aren't making anything, when it isn't just the weather.
+   Translucent so the sky still shows through. */
+.hero-note { display: none; gap: 12px; padding: 14px 16px; border-radius: 16px; font-size: var(--fs-small); line-height: 1.45; color: var(--alert);
+  background: color-mix(in srgb, var(--alert) 13%, transparent); border: 1px solid color-mix(in srgb, var(--alert) 32%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .hero-note.show { display: flex; animation: note-in 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-.hero-note svg { flex: none; margin-top: 1px; }
+.hero-note svg { flex: none; margin-top: 2px; }
 .hero-note b { display: block; font-size: var(--fs-body); font-weight: 600; margin-bottom: 2px; }
-.hero-note span { color: color-mix(in srgb, var(--warn) 78%, var(--ink)); }
-@media (max-width: 1099px) { .hero-note { max-width: 46ch; } }
+.hero-note span { color: color-mix(in srgb, var(--alert) 70%, var(--ink)); }
 @keyframes note-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.outage-band { fill: var(--warn); opacity: 0.1; }
-.outage-label { font-size: 11px; fill: var(--warn); font-weight: 600; }
-.note-warn { color: var(--warn); }
-.hero-sofar .val { font-size: 20px; font-weight: 600; }
-@media (max-width: 480px) { .hero-sofar .val { font-size: 17px; } }
-@media (max-width: 600px) { .hero-sofar { margin-top: 14px; } }
-.hero-sofar .vs { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 2px; }
-.hero-sofar .fc { color: var(--ink-soft); font-size: var(--fs-body); margin-top: 2px; }
-.hero-sofar .fc b { color: var(--ink); font-weight: 600; }
-.hero-sentences { grid-area: top; position: relative; z-index: 4; }
+.outage-band { fill: var(--alert); opacity: 0.1; }
+.outage-label { font-size: 11px; fill: var(--alert); font-weight: 600; }
 .hero-sentences p { margin: 4px 0; font-size: 17px; font-weight: 500; }
 .hero-sentences .s-solar { color: var(--leaf-deep); }
 .hero-sentences .s-grid { color: var(--grid); }
 .hero-sentences .s-plum { color: var(--plum); }
-.hero-right { grid-area: right; position: relative; min-width: 0; }
-/* The arc needs real height to render into — on desktop the grid row
-   (1fr) already spans the full remaining card height, but on mobile/
-   tablet "right" is its own auto-sized row, so it needs an explicit
-   height (an absolutely-positioned arc-wrap child can't contribute to
-   auto sizing). */
-@media (max-width: 1099px) { .hero-right { height: 260px; } }
-@media (max-width: 480px) { .hero-right { height: 220px; } }
-.cap-label { position: absolute; left: 0; top: 0; font-size: var(--fs-small); color: var(--ink-soft); }
-/* Curve / per-hour switch, top-right of the chart. */
+/* The chart, full width. The arc is absolutely positioned inside, so this
+   box carries the height; its bottom PAD_B holds the sunrise/now/sunset row. */
+.hero-right { position: relative; min-width: 0; height: 330px; }
+@media (max-width: 1099px) { .hero-right { height: 280px; } }
+@media (max-width: 480px) { .hero-right { height: 240px; } }
+/* Per-hour legend, top-left of the chart. */
 .chart-legend { position: absolute; left: 0; top: 0; display: none; gap: 14px; font-size: var(--fs-small); color: var(--ink-soft); }
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
@@ -200,24 +198,17 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .chart-legend .fc { border: 1.5px dashed var(--leaf); }
 .chart-legend .clear { background: var(--mist); }
 .hero.hourly .chart-legend { display: flex; }
-.hero.hourly .cap-label { display: none; }
 @media (max-width: 600px) { .hero.hourly .chart-legend { top: 34px; } }
-.view-toggle { position: absolute; right: 0; top: -6px; z-index: 5; display: inline-flex; padding: 2px; border-radius: 999px; background: var(--sky); border: 1px solid var(--mist); }
+/* Curve / per-hour switch, top-right of the chart. */
+.view-toggle { position: absolute; right: 0; top: -4px; z-index: 5; display: inline-flex; padding: 2px; border-radius: 999px; background: var(--sky); border: 1px solid var(--mist); }
 .view-toggle button { height: 26px; padding: 0 12px; border-radius: 999px; border: 0; background: transparent; color: var(--ink-soft); font: 500 12px/1 var(--font); cursor: pointer; }
 .view-toggle button[aria-pressed="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 1px 2px rgba(14, 23, 38, 0.12); }
-@media (max-width: 600px) { .view-toggle { top: 0; } }
-/* The design's phone hero frame has no capacity hairline at all, but the
-   tablet frame keeps it (spanning the full-width arc row) — only phone
-   (<=600) hides it. */
-@media (max-width: 600px) { .cap-label, #cap-line { display: none; } }
 .arc-wrap { position: absolute; inset: 0; }
 .arc-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
 /* `top` is set inline by drawArc(), as a percentage matching the SVG's
    actual horizon line — the one true source of "where the horizon is",
    shared with .cap-label so nothing has to be hand-tuned per breakpoint. */
 .sun-row { position: absolute; left: 0; right: 0; display: flex; justify-content: space-between; font-size: var(--fs-small); padding-top: 10px; }
-@media (max-width: 600px) { .sun-row { left: 20px; right: 20px; } }
-@media (max-width: 480px) { .sun-row { left: 16px; right: 16px; } }
 .sun-row .stack { display: flex; flex-direction: column; gap: 2px; }
 .sun-row .stack.now { align-items: center; position: absolute; top: 10px; transform: translateX(-50%); }
 .sun-row .stack.sunset { align-items: flex-end; }
@@ -353,9 +344,6 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .sys-status.alert { color: var(--alert); }
 .sys-status.alert .dot { background: var(--alert); }
 .sys-status.rest .dot { background: transparent; border: 1.5px solid var(--ink-soft); }
-.sys-alarms { margin: -8px 0 20px; padding: 0; list-style: none; font-size: var(--fs-body); color: var(--alert); }
-.sys-alarms li { margin: 2px 0; }
-.sys-alarms .t { color: var(--ink-soft); margin-right: 8px; }
 .sys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; margin: 0; }
 @media (max-width: 700px) { .sys-grid { grid-template-columns: 1fr; } }
 .sys-grid > div { border-top: 1px solid var(--mist); padding: 12px 0 14px; }
@@ -363,6 +351,21 @@ button:active:not(:disabled) { transform: scale(0.97); }
 .sys-grid dd { margin: 0; font-size: 17px; font-weight: 500; }
 .sys-grid dd .more { display: block; font-size: var(--fs-body); font-weight: 400; color: var(--ink-soft); margin-top: 2px; }
 .sys-foot { font-size: var(--fs-small); color: var(--ink-soft); margin: 16px 0 0; }
+.log { margin: 0 0 36px; }
+.log-head { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
+.log-empty { color: var(--ink-soft); margin: 0; max-width: 60ch; }
+.log-list { list-style: none; margin: 0; padding: 0; }
+.log-row { display: grid; grid-template-columns: 150px 20px 1fr; gap: 4px 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--mist); }
+.log-when { display: flex; flex-direction: column; font-size: var(--fs-small); }
+.log-when .d { font-weight: 600; }
+.log-when .t { color: var(--ink-soft); }
+.log-icon { margin-top: 2px; color: var(--ink-soft); }
+.log-row.power_cut .log-icon, .log-row.alarm .log-icon { color: var(--alert); }
+.log-what b { display: block; font-weight: 600; }
+.log-what span { color: var(--ink-soft); }
+.log-row.ongoing .log-what b { color: var(--alert); }
+.log-more { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--mist); background: var(--paper); color: var(--ink); font: 500 var(--fs-small) var(--font); cursor: pointer; }
+@media (max-width: 480px) { .log-row { grid-template-columns: 20px 1fr; } .log-when { grid-column: 1 / -1; flex-direction: row; gap: 8px; } }
 /* month navigation + clickable days/bars */
 .month-rail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 @media (max-width: 1099px) { .month-rail { margin-bottom: 16px; } .month-rail .section-head { margin-bottom: 0; } }
@@ -415,6 +418,15 @@ button:active:not(:disabled) { transform: scale(0.97); }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ic-alert" viewBox="0 0 20 20"><path d="M10 2.5 18 17H2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><line x1="10" y1="8" x2="10" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="10" cy="14.6" r="0.9" fill="currentColor"/></symbol>
   <symbol id="ic-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M10 5v5l3 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <!-- Weather icons: Phosphor Icons (duotone), MIT licence, phosphoricons.com -->
+  <symbol id="w-sun" viewBox="0 0 256 256" fill="currentColor"><path d="M184,128a56,56,0,1,1-56-56A56,56,0,0,1,184,128Z" opacity="0.2"/><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></symbol>
+  <symbol id="w-cloud-sun" viewBox="0 0 256 256" fill="currentColor"><path d="M139.84,84.41v0a68.22,68.22,0,0,0-41.65,46v-.11a44.08,44.08,0,0,0-38.54,5h0a48,48,0,1,1,80.19-50.94Z" opacity="0.2"/><path d="M164,72a76.2,76.2,0,0,0-20.26,2.73,55.63,55.63,0,0,0-9.41-11.54l9.51-13.57a8,8,0,1,0-13.11-9.18L121.22,54A55.9,55.9,0,0,0,96,48c-.58,0-1.16,0-1.74,0L91.37,31.71a8,8,0,1,0-15.75,2.77L78.5,50.82A56.1,56.1,0,0,0,55.23,65.67L41.61,56.14a8,8,0,1,0-9.17,13.11L46,78.77A55.55,55.55,0,0,0,40,104c0,.57,0,1.15,0,1.72L23.71,108.6a8,8,0,0,0,1.38,15.88,8.24,8.24,0,0,0,1.39-.12l16.32-2.88a55.74,55.74,0,0,0,5.86,12.42A52,52,0,0,0,84,224h80a76,76,0,0,0,0-152ZM56,104a40,40,0,0,1,72.54-23.24,76.26,76.26,0,0,0-35.62,40,52.14,52.14,0,0,0-31,4.17A40,40,0,0,1,56,104ZM164,208H84a36,36,0,1,1,4.78-71.69c-.37,2.37-.63,4.79-.77,7.23a8,8,0,0,0,16,.92,58.91,58.91,0,0,1,1.88-11.81c0-.16.09-.32.12-.48A60.06,60.06,0,1,1,164,208Z"/></symbol>
+  <symbol id="w-cloud" viewBox="0 0 256 256" fill="currentColor"><path d="M240,128a80,80,0,0,1-80,80H72A56,56,0,1,1,85.92,97.74l0,.1A80,80,0,0,1,240,128Z" opacity="0.2"/><path d="M160,40A88.09,88.09,0,0,0,81.29,88.67,64,64,0,1,0,72,216h88a88,88,0,0,0,0-176Zm0,160H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.11A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,72,72Z"/></symbol>
+  <symbol id="w-cloud-fog" viewBox="0 0 256 256" fill="currentColor"><path d="M224,100a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,82.34v.11A68.06,68.06,0,0,1,224,100Z" opacity="0.2"/><path d="M120,208H72a8,8,0,0,1,0-16h48a8,8,0,0,1,0,16Zm64-16H160a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Zm-24,32H104a8,8,0,0,0,0,16h56a8,8,0,0,0,0-16Zm72-124a76.08,76.08,0,0,1-76,76H76A52,52,0,0,1,76,72a53.26,53.26,0,0,1,8.92.76A76.08,76.08,0,0,1,232,100Zm-16,0A60.06,60.06,0,0,0,96,96.46a8,8,0,0,1-16-.92q.21-3.66.77-7.23A38.11,38.11,0,0,0,76,88a36,36,0,0,0,0,72h80A60.07,60.07,0,0,0,216,100Z"/></symbol>
+  <symbol id="w-cloud-rain" viewBox="0 0 256 256" fill="currentColor"><path d="M224,92a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,74.34v.11A68.06,68.06,0,0,1,224,92Z" opacity="0.2"/><path d="M158.66,196.44l-32,48a8,8,0,1,1-13.32-8.88l32-48a8,8,0,0,1,13.32,8.88ZM232,92a76.08,76.08,0,0,1-76,76H132.28l-29.62,44.44a8,8,0,1,1-13.32-8.88L113.05,168H76A52,52,0,0,1,76,64a53.26,53.26,0,0,1,8.92.76A76.08,76.08,0,0,1,232,92Zm-16,0A60.06,60.06,0,0,0,96,88.46a8,8,0,0,1-16-.92q.21-3.66.77-7.23A38.11,38.11,0,0,0,76,80a36,36,0,0,0,0,72h80A60.07,60.07,0,0,0,216,92Z"/></symbol>
+  <symbol id="w-cloud-lightning" viewBox="0 0 256 256" fill="currentColor"><path d="M224,92a68,68,0,0,1-68,68H76A44,44,0,1,1,90.2,74.34v.11A68.06,68.06,0,0,1,224,92Z" opacity="0.2"/><path d="M156,16A76.2,76.2,0,0,0,84.92,64.76,53.26,53.26,0,0,0,76,64a52,52,0,0,0,0,104h37.87L97.14,195.88A8,8,0,0,0,104,208h25.87l-16.73,27.88a8,8,0,0,0,13.72,8.24l24-40A8,8,0,0,0,144,192H118.13l14.4-24H156a76,76,0,0,0,0-152Zm0,136H76a36,36,0,0,1,0-72,38.11,38.11,0,0,1,4.78.31q-.56,3.57-.77,7.23a8,8,0,0,0,16,.92A60.06,60.06,0,1,1,156,152Z"/></symbol>
+  <symbol id="w-moon-stars" viewBox="0 0 256 256" fill="currentColor"><path d="M210.69,158.18A88,88,0,1,1,97.82,45.31,96.08,96.08,0,0,0,192,160,96.78,96.78,0,0,0,210.69,158.18Z" opacity="0.2"/><path d="M240,96a8,8,0,0,1-8,8H216v16a8,8,0,0,1-16,0V104H184a8,8,0,0,1,0-16h16V72a8,8,0,0,1,16,0V88h16A8,8,0,0,1,240,96ZM144,56h8v8a8,8,0,0,0,16,0V56h8a8,8,0,0,0,0-16h-8V32a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16Zm72.77,97a8,8,0,0,1,1.43,8A96,96,0,1,1,95.07,37.8a8,8,0,0,1,10.6,9.06A88.07,88.07,0,0,0,209.14,150.33,8,8,0,0,1,216.77,153Zm-19.39,14.88c-1.79.09-3.59.14-5.38.14A104.11,104.11,0,0,1,88,64c0-1.79,0-3.59.14-5.38A80,80,0,1,0,197.38,167.86Z"/></symbol>
+  <symbol id="w-cloud-moon" viewBox="0 0 256 256" fill="currentColor"><path d="M106.31,130.38ZM102.38,17.62h0A64.06,64.06,0,0,1,25.62,94.38h0A64.12,64.12,0,0,0,63,138.93h0a44.08,44.08,0,0,1,43.33-8.54,68.13,68.13,0,0,1,45.47-47.32l.15,0c0-1,.07-2,.07-3A64,64,0,0,0,102.38,17.62Z" opacity="0.2"/><path d="M172,72a76.45,76.45,0,0,0-12.36,1A71.93,71.93,0,0,0,104.17,9.83a8,8,0,0,0-9.59,9.58A56.05,56.05,0,0,1,40,88a56.45,56.45,0,0,1-12.59-1.42,8,8,0,0,0-9.59,9.59,72.22,72.22,0,0,0,32.29,45.06A52,52,0,0,0,92,224h80a76,76,0,0,0,0-152ZM37.37,104c.87,0,1.75,0,2.63,0a72.08,72.08,0,0,0,72-72c0-.89,0-1.78,0-2.67a55.63,55.63,0,0,1,32,48,76.28,76.28,0,0,0-43,43.4A52,52,0,0,0,62,129.59,56.22,56.22,0,0,1,37.37,104ZM172,208H92a36,36,0,1,1,4.78-71.69c-.37,2.37-.63,4.79-.77,7.23a8,8,0,0,0,16,.92,58.91,58.91,0,0,1,1.88-11.81c0-.16.09-.32.12-.48A60.06,60.06,0,1,1,172,208Z"/></symbol>
 </svg>
 
 <div class="wrap">
@@ -432,21 +444,23 @@ button:active:not(:disabled) { transform: scale(0.97); }
       <section class="hero" id="hero" aria-label="Today's sun">
         <div class="sky-fx" id="sky-fx" aria-hidden="true"></div>
         <div class="hero-inner">
-          <div id="hero-live-wrap">
-            <div class="hero-top">
-              <div class="hero-figure"><span class="num" id="v-solar">–</span></div>
-              <div class="hero-sub-mode" id="hero-sub-mode">right now</div>
-              <div class="hero-note" id="hero-note" role="status"></div>
+          <div class="hero-head">
+            <div class="hero-figures" id="hero-live-wrap">
+              <div class="hero-total">
+                <div><span class="num" id="v-total">–</span></div>
+                <div class="l" id="hero-total-label">so far today</div>
+                <div class="vs" id="hero-sub-yesterday"></div>
+              </div>
+              <div class="hero-stack">
+                <div class="row"><div class="v" id="v-solar">–</div><div class="l" id="hero-sub-mode">right now</div></div>
+                <div class="row"><div class="v" id="v-forecast">–</div><div class="l" id="hero-fc-label">expected by sunset</div></div>
+              </div>
             </div>
-            <div class="hero-sofar">
-              <div class="val" id="hero-sub-today"></div>
-              <div class="vs" id="hero-sub-yesterday"></div>
-              <div class="fc" id="hero-sub-forecast"></div>
-            </div>
+            <div class="hero-sentences" id="hero-sentences" style="display:none"></div>
+            <div class="hero-weather" id="hero-weather" hidden></div>
           </div>
-          <div class="hero-sentences" id="hero-sentences" style="display:none"></div>
+          <div class="hero-note" id="hero-note" role="status"></div>
           <div class="hero-right">
-            <div class="cap-label" id="hero-cap"></div>
             <div class="chart-legend" aria-hidden="true"><span><i class="made"></i>made</span><span><i class="fc"></i>forecast</span><span><i class="clear"></i>clear sky</span></div>
             <div class="view-toggle" id="view-toggle" role="group" aria-label="Chart view" style="display:none">
               <button type="button" data-view="curve" aria-pressed="true">Curve</button>
@@ -460,7 +474,6 @@ button:active:not(:disabled) { transform: scale(0.97); }
                     <stop offset="100%" stop-color="var(--leaf)" stop-opacity="0.02"/>
                   </linearGradient>
                 </defs>
-                <line id="cap-line" x1="0" y1="20" x2="1000" y2="20" stroke="var(--mist)" stroke-width="1.5" stroke-opacity="0.5"/>
                 <line id="horizon-line" x1="0" y1="340" x2="1000" y2="340" stroke="var(--mist)" stroke-width="1.5"/>
                 <g id="outage-bands"></g>
                 <g id="hour-bars"></g>
@@ -704,85 +717,39 @@ function render() {
 const STALE_SEC = 11 * 60;
 let diag = null; // why the panels aren't producing, when it isn't the weather
 
-// ---- outages: daylight spans with no output while there was sun to use ----
-// WAAREE doesn't report grid voltage, so this is inferred. A grid-tied
-// inverter switches off when the mains goes down but its logger keeps
-// reporting zeros; if the logger loses power or Wi-Fi, the samples stop
-// altogether. Either way, it only counts when the forecast says there was
-// real sun, so a dark rainy hour isn't mistaken for a fault.
-const DEAD_KW = 0.03;
-function findOutages(isNight, isStale) {
-  const s = (state.today.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
-  const sunriseMin = hhmmToMin(state.sun.sunrise), sunsetMin = hhmmToMin(state.sun.sunset);
-  const lo = sunriseMin + 60, hi = sunsetMin - 60;
-  const ist = istNow();
-  const nowMin = isNight ? sunsetMin : ist.getUTCHours() * 60 + ist.getUTCMinutes();
-  const fc = forecastToday();
-  const floorKw = Math.max(0.15, (state.plant.capacity_w || 3500) / 1000 * 0.05);
-  const fcIn = (a, b) => fc ? fc.series.filter(p => { const t = hhmmToMin(p.t); return t >= a && t <= b; }) : [];
-  const spans = [];
-  const add = (from, to, kind, ongoing) => {
-    from = Math.max(from, lo); to = Math.min(to, hi);
-    if (to - from < 15) return;
-    const pts = fcIn(from, to);
-    if (pts.length && pts.reduce((a, p) => a + p.expected_w, 0) / pts.length / 1000 < floorKw) return;
-    spans.push({ from, to, kind, ongoing, lostWh: pts.length ? pts.reduce((a, p) => a + p.expected_w * 0.25, 0) : null });
-  };
-  let start = null;
-  for (let i = 0; i < s.length; i++) {
-    const [t, kw] = s[i];
-    if (i > 0 && t - s[i - 1][0] > 25) {
-      if (start != null) { add(start, s[i - 1][0], 'zero', false); start = null; }
-      add(s[i - 1][0], t, 'gap', false);
-    }
-    if (kw < DEAD_KW) { if (start == null) start = t; }
-    else if (start != null) { add(start, t, 'zero', false); start = null; }
-  }
-  const lastT = s.length ? s[s.length - 1][0] : null;
-  if (start != null) add(start, nowMin, 'zero', !isNight);
-  // Samples stopped arriving, though our own poll is fresh.
-  if (!isNight && !isStale && lastT != null && nowMin - lastT > 25) add(lastT, nowMin, 'gap', true);
-  // A zero run straight into a silence is one event.
-  spans.sort((a, b) => a.from - b.from);
-  const out = [];
-  for (const sp of spans) {
-    const prev = out[out.length - 1];
-    if (prev && sp.from <= prev.to + 5) {
-      prev.to = Math.max(prev.to, sp.to); prev.ongoing = prev.ongoing || sp.ongoing;
-      if (sp.ongoing) prev.kind = sp.kind;
-      prev.lostWh = prev.lostWh != null || sp.lostWh != null ? (prev.lostWh || 0) + (sp.lostWh || 0) : null;
-    } else out.push({ ...sp });
-  }
-  return out;
-}
+// ---- outages and the system log ----
+// The worker keeps a log (state.events, newest first) of power cuts,
+// inverter drop-outs and WAAREE alarms; see src/events.ts for how cuts are
+// inferred. Today's cuts shade the chart, and one still going on explains
+// the missing output at the top of the page.
 function hmOf(min) { return `${pad2(Math.floor(min / 60) % 24)}:${pad2(Math.round(min % 60))}`; }
-function latestAlarm() {
-  const a = (state.alarms || []).slice().sort((x, y) => String(x.time).localeCompare(String(y.time)));
-  return a[a.length - 1] || null;
+function todayOutages() {
+  const today = todayIso();
+  return (state.events || []).filter(e => e.date === today && e.kind !== 'alarm' && e.to)
+    .map(e => ({ kind: e.kind, from: hhmmToMin(e.from), to: hhmmToMin(e.to), ongoing: e.ongoing, lostWh: e.lost_wh }));
 }
 function diagnose(isNight, isStale) {
   if (isNight || isStale) return null;
   const d = (state.devices || [])[0];
-  const alarm = latestAlarm();
+  const alarms = (state.events || []).filter(e => e.kind === 'alarm' && e.date === todayIso());
   if (d && d.status === 2) {
     return { kind: 'fault', title: 'The inverter is reporting a fault.',
-      detail: alarm ? `WAAREE says: ${alarm.content}.` : "Check the inverter's display for an error code." };
+      detail: alarms.length && alarms[0].detail ? `WAAREE says: ${alarms[0].detail}.` : "Check the inverter's display for an error code." };
   }
-  const cur = findOutages(isNight, isStale).find(sp => sp.ongoing);
+  const cur = todayOutages().find(sp => sp.ongoing);
   if (!cur) return null;
   const since = to12h(hmOf(cur.from));
-  if (cur.kind === 'gap' || (d && d.status === 3)) {
-    return { kind: 'offline', from: cur.from, title: `No word from the inverter since ${since}.`,
-      detail: "WAAREE itself is answering, so the problem is at home. The inverter may have lost power, or its Wi-Fi may be down." };
+  if (cur.kind === 'no_data' || (d && d.status === 3)) {
+    return { kind: 'offline', title: `No word from the inverter since ${since}.`,
+      detail: 'WAAREE itself is answering, so the problem is at home. The inverter may have lost power, or its Wi-Fi may be down.' };
   }
-  if (alarm && hhmmToMin((/\d{2}:\d{2}/.exec(alarm.time) || ['00:00'])[0]) >= cur.from - 30) {
-    return { kind: 'fault', from: cur.from, title: `Stopped at ${since}, with an alarm.`, detail: `WAAREE says: ${alarm.content}.` };
-  }
+  const alarm = alarms.find(a => hhmmToMin(a.from) >= cur.from - 30);
+  if (alarm && alarm.detail) return { kind: 'fault', title: `Stopped at ${since}, with an alarm.`, detail: `WAAREE says: ${alarm.detail}.` };
   const fc = forecastToday();
   let expKw = null;
   if (fc) for (const p of fc.series) if (hhmmToMin(p.t) <= cur.to + 8) expKw = p.expected_w / 1000;
-  return { kind: 'outage', from: cur.from,
-    title: expKw != null ? `No output since ${since}, with about ${fmtIN(1).format(expKw)} kW of sun to use.` : `No output since ${since}.`,
+  return { kind: 'outage',
+    title: expKw != null && expKw >= 0.1 ? `No output since ${since}, with about ${fmtIN(1).format(expKw)} kW of sun to use.` : `No output since ${since}.`,
     detail: "The inverter is still online, so this is most likely a power cut. Grid-tied inverters switch off when the mains goes down, and start again a few minutes after it's back." };
 }
 
@@ -819,6 +786,40 @@ function skyPhrase(kind, isNight) {
   return { clear: 'clear sky', fair: isNight ? 'mostly clear' : 'mostly sunny', cloudy: 'partly cloudy', overcast: 'overcast',
     fog: 'foggy', drizzle: 'drizzling', rain: 'raining', storm: 'thunderstorms' }[kind] || '';
 }
+// Header weather: this hour's icon and temperature, then the next few hours.
+function wxIcon(kind, night) {
+  const id = { clear: night ? 'moon-stars' : 'sun', fair: night ? 'cloud-moon' : 'cloud-sun', cloudy: night ? 'cloud-moon' : 'cloud-sun',
+    overcast: 'cloud', fog: 'cloud-fog', drizzle: 'cloud-rain', rain: 'cloud-rain', storm: 'cloud-lightning' }[kind] || 'cloud';
+  const sunny = !night && (kind === 'clear' || kind === 'fair');
+  return `<svg class="wx-icon${sunny ? ' sunny' : ''}" viewBox="0 0 256 256" aria-hidden="true"><use href="#w-${id}"/></svg>`;
+}
+function renderWeather(isNight) {
+  const el = $('hero-weather');
+  const day = forecastToday() || (state.forecast && state.forecast.today && state.forecast.today.date === todayIso() ? state.forecast.today : null);
+  const sky = day && day.sky ? day.sky : [];
+  const ist = istNow();
+  const nowMin = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const sr = hhmmToMin(state.sun.sunrise), ss = hhmmToMin(state.sun.sunset);
+  const nightAt = (m) => m < sr || m > ss;
+  let cur = null;
+  for (const p of sky) if (!cur || Math.abs(hhmmToMin(p.t) - nowMin) < Math.abs(hhmmToMin(cur.t) - nowMin)) cur = p;
+  let out = '';
+  if (cur && cur.temp != null) {
+    const kind = SKY_FORCED || skyKind(cur.code, cur.cloud);
+    out += `<div class="wx-now" title="${cap1(skyPhrase(kind, isNight))}"><span class="visually-hidden">${cap1(skyPhrase(kind, isNight))}, </span>${wxIcon(kind, isNight)}<span class="temp num">${Math.round(cur.temp)}°</span></div>`;
+    const next = sky.filter(p => hhmmToMin(p.t) > hhmmToMin(cur.t) + 30).slice(0, 4);
+    if (next.length) {
+      out += `<div class="wx-hours">${next.map(p => {
+        const m = hhmmToMin(p.t) + 7; // slot ends on the hour
+        const k = skyKind(p.code, p.cloud);
+        const h = Math.round(m / 60) % 24, label = `${h % 12 || 12} ${h < 12 ? 'am' : 'pm'}`;
+        return `<div class="wx-hour" title="${cap1(skyPhrase(k, nightAt(m)))}"><span class="h">${label}</span>${wxIcon(k, nightAt(m))}<span class="temp num">${Math.round(p.temp)}°</span></div>`;
+      }).join('')}</div>`;
+    }
+  }
+  if (el.__html !== out) { el.__html = out; el.innerHTML = out; el.hidden = !out; }
+}
+
 let skyKey = '';
 function renderSky(sky, isNight) {
   const kind = sky ? sky.kind : null;
@@ -932,9 +933,8 @@ function renderHero(isNight) {
   $('now-label').textContent = to12h(nowHHMM);
 
   const fc = forecastToday();
-  const capKw = (state.plant.capacity_w || 0) / 1000;
-  $('hero-cap').textContent = capKw ? `${fmtIN(1).format(capKw)} kW, your inverter's limit` : '';
   $('view-toggle').style.display = fc ? '' : 'none';
+  renderWeather(isNight);
 
   if (state.has_meter && l.home_w != null) {
     $('hero-live-wrap').style.display = 'none';
@@ -944,39 +944,30 @@ function renderHero(isNight) {
       : mode === 'import' ? `<p class="s-grid">Taking ${fmtPower(l.import_w).text} kW from the grid</p>` : '';
     $('hero-sentences').innerHTML = `<p class="s-solar">Making ${fmtPower(l.solar_w).text} kW</p><p>Home using ${fmtPower(l.home_w).text} kW</p>${extra}`;
   } else {
-    $('hero-live-wrap').style.display = 'contents';
+    $('hero-live-wrap').style.display = '';
     $('hero-sentences').style.display = 'none';
     const madeWh = state.today.produced_wh || 0;
-    const sky = skyNow();
-    if (isNight) {
-      setLiveFigure(0);
-      $('hero-sub-mode').textContent = `The sun's down. Panels wake up around ${to12h(state.sun.sunrise)}.`;
-      $('hero-sub-today').textContent = `${fmtKwh(madeWh)} today`;
-    } else {
-      setLiveFigure(l.solar_w);
-      const phrase = sky ? skyPhrase(sky.kind, false) : '';
-      $('hero-sub-mode').textContent = phrase ? `right now, ${phrase}` : 'right now';
-      $('hero-sub-today').textContent = `${fmtKwh(madeWh)} so far today`;
-    }
+    // The headline is what today has made; beside it, what's happening now
+    // and where the day is heading.
+    $('v-total').innerHTML = html(fmtEnergy(madeWh));
+    $('hero-total-label').textContent = isNight ? 'made today' : 'so far today';
+    setLiveFigure(isNight ? 0 : l.solar_w);
+    $('hero-sub-mode').textContent = isNight ? `back at ${to12h(state.sun.sunrise)}` : 'right now';
     // vs_yesterday_wh compares against yesterday up to this same time of day.
     const vy = state.today.vs_yesterday_wh;
-    const vyEl = $('hero-sub-yesterday');
     const byNow = isNight ? '' : ' by now';
-    if (vy != null) {
-      const kwh = Math.abs(vy) / 1000;
-      vyEl.textContent = kwh < 0.05 ? `about the same as yesterday${byNow}` :
-        `${fmtIN(1).format(kwh)} kWh ${vy >= 0 ? 'more' : 'less'} than yesterday${byNow}`;
-    } else {
-      vyEl.textContent = '';
-    }
-    const fcEl = $('hero-sub-forecast');
+    $('hero-sub-yesterday').textContent = vy == null ? '' : Math.abs(vy) < 50 ? `about the same as yesterday${byNow}` :
+      `${fmtIN(1).format(Math.abs(vy) / 1000)} kWh ${vy >= 0 ? 'more' : 'less'} than yesterday${byNow}`;
+    const tm = forecastTomorrow();
     if (fc && !isNight && nowMin >= hhmmToMin(state.sun.sunrise)) {
-      const total = madeWh + forecastRemainingWh(fc, nowMin);
-      fcEl.innerHTML = `Heading for about <b>${fmtKwh(total)}</b> by sunset`;
-    } else if (fc && isNight && fc.clear_wh > 0) {
-      fcEl.textContent = `${Math.round(madeWh / fc.clear_wh * 100)}% of what a clear day gives`;
+      $('v-forecast').innerHTML = html(fmtEnergy(madeWh + forecastRemainingWh(fc, nowMin)));
+      $('hero-fc-label').textContent = 'expected by sunset';
+    } else if (tm) {
+      $('v-forecast').innerHTML = html(fmtEnergy(tm.expected_wh));
+      $('hero-fc-label').textContent = 'expected tomorrow';
     } else {
-      fcEl.textContent = '';
+      $('v-forecast').innerHTML = html(fmtEnergy(state.yesterday.produced_wh || 0));
+      $('hero-fc-label').textContent = 'yesterday, all day';
     }
   }
 
@@ -1077,11 +1068,9 @@ function drawArc(isNight) {
   const y = (kw) => (H - PAD_B) - (Math.max(0, Math.min(kw, capKw)) / capKw) * (H - PAD_B - PAD_T);
   $('horizon-line').setAttribute('y1', H - PAD_B); $('horizon-line').setAttribute('y2', H - PAD_B);
   $('horizon-line').setAttribute('x2', W);
-  $('cap-line').setAttribute('y1', PAD_T); $('cap-line').setAttribute('y2', PAD_T);
   // sun-row sits right under the horizon, wherever that lands — a single
   // source of truth instead of separately hand-tuned per breakpoint.
   document.querySelector('.sun-row').style.top = ((H - PAD_B) / H * 100) + '%';
-  $('cap-line').setAttribute('x2', W);
 
   const series = (state.today.series || []).map(p => [hhmmToMin(p.t), p.solar_w / 1000]);
   const ist = istNow();
@@ -1136,10 +1125,10 @@ function drawArc(isNight) {
   label('fc-label', !hourly && fcAt && W >= 560 ? [fcAt[0], Math.min(y(0) - 6, fcAt[1] + 30)] : null);
 
   // Outages: a shaded band over each span the panels were off with sun about.
-  $('outage-bands').innerHTML = findOutages(isNight, $('hero').classList.contains('stale')).map(sp => {
-    const x0 = x(sp.from), x1 = x(Math.min(sp.to, isNight ? sunsetMin : nowMin));
+  $('outage-bands').innerHTML = todayOutages().map(sp => {
+    const x0 = x(sp.from), x1 = x(sp.ongoing && !isNight ? Math.max(sp.to, nowMin) : sp.to);
     const w = Math.max(0, x1 - x0);
-    const lbl = w >= 54 ? `<text class="outage-label" x="${x0 + w / 2}" y="${y(0) - 8}" text-anchor="middle">${sp.kind === 'gap' ? 'no data' : 'no power'}</text>` : '';
+    const lbl = w >= 54 ? `<text class="outage-label" x="${x0 + w / 2}" y="${y(0) - 8}" text-anchor="middle">${sp.kind === 'no_data' ? 'no data' : 'no power'}</text>` : '';
     return `<rect class="outage-band" x="${x0}" y="${PAD_T}" width="${w}" height="${Math.max(0, y(0) - PAD_T)}" rx="4"/>${lbl}`;
   }).join('');
 
@@ -1249,16 +1238,7 @@ function renderLedger(isNight) {
   const t = state.today;
   const now = istNow();
   const mName = MONTH_FULL[(state.month.month || (now.getUTCMonth() + 1)) - 1];
-  const fcT = forecastToday();
-  const sky = fcT ? weatherLabel(fcT.weather_code) : '';
-  const outs = findOutages(isNight, $('hero').classList.contains('stale')).filter(sp => !sp.ongoing);
-  const outHtml = outs.map(sp => {
-    const span = `${to12h(hmOf(sp.from))} to ${to12h(hmOf(sp.to))}`;
-    const lost = sp.lostWh != null && sp.lostWh >= 100 ? ` About ${fmtKwh(sp.lostWh)} missed.` : '';
-    return `<br><span class="note-warn">${sp.kind === 'gap' ? `No data from ${span}.` : `Off from ${span}, most likely a power cut.`}${lost}</span>`;
-  }).join('');
-  $('today-note').innerHTML = `${WEEKDAY_FULL[now.getUTCDay()]} ${now.getUTCDate()} ${mName}` +
-    (sky ? `<br>${cap1(sky)}${fcT.cloud_pct != null ? `, ${fcT.cloud_pct}% cloud` : ''}` : '') + outHtml;
+  $('today-note').textContent = `${WEEKDAY_FULL[now.getUTCDay()]} ${now.getUTCDate()} ${mName}`;
   const cells = [];
   const price = state.plant.price_per_kwh;
   cells.push({
@@ -1453,8 +1433,7 @@ function renderSystem(isNight) {
   if (!d) {
     out += `<p class="sys-status rest"><span class="dot"></span>Waiting for inverter details from WAAREE.</p>`;
   } else if (alarms.length) {
-    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. Worth a look.</p>`;
-    out += `<ul class="sys-alarms">${alarms.slice(0, 5).map(a => `<li><span class="t">${esc(fmtAlarmTime(a.time))}</span>${esc(a.content)}</li>`).join('')}</ul>`;
+    out += `<p class="sys-status alert"><span class="dot"></span>${alarms.length === 1 ? 'One alarm' : `${alarms.length} alarms`} today. The log below has the details.</p>`;
   } else if (diag) {
     out += `<p class="sys-status alert"><span class="dot"></span>${esc(diag.title)}</p>`;
   } else if (d.status === 2) {
@@ -1510,14 +1489,64 @@ function renderSystem(isNight) {
   }
   if (d && d.sn) rows.push(['Inverter serial', `ends in ${esc(d.sn.slice(-6))}`, '']);
 
+  // Status, then the log, then the fixed details.
+  out += renderLog();
+  out += `<h3 class="log-head">Details</h3>`;
   out += `<dl class="sys-grid">${rows.map(([k, v, more]) => `<div><dt>${k}</dt><dd>${v}${more ? `<span class="more">${more}</span>` : ''}</dd></div>`).join('')}</dl>`;
   out += `<p class="sys-foot">Figures come from WAAREE every 5 minutes.${state.has_meter ? '' : ' Add an energy meter to see what your home uses and what goes to the grid.'}</p>`;
-  $('sys-body').innerHTML = out;
+  const body = $('sys-body');
+  if (body.__html !== out) {
+    body.__html = out; body.innerHTML = out;
+    const more = $('log-more');
+    if (more) more.onclick = () => { logShown += LOG_PAGE; safeRender(); };
+  }
 }
-// Alarm times arrive as "2026-09-26 13:40:53 IST+0530"; show just the time.
-function fmtAlarmTime(raw) {
-  const m = /\d{2}:\d{2}/.exec(raw || '');
-  return m ? to12h(m[0]) : '';
+
+// ---- system log ----
+// The latest 10 entries, then 10 more per "Load more".
+const LOG_PAGE = 10;
+let logShown = LOG_PAGE;
+function fmtLogDay(iso) {
+  const today = todayIso();
+  if (iso === today) return 'Today';
+  if (iso === shiftDate(today, -1)) return 'Yesterday';
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${WEEKDAY_FULL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].slice(0, 3)} ${d} ${MONTH_NAMES[m - 1]}`;
+}
+function logLine(e) {
+  const from = to12h(e.from);
+  if (e.kind === 'alarm') {
+    return { icon: 'ic-alert', cls: 'alarm', title: 'Inverter alarm', at: from, detail: e.detail ? esc(e.detail) : 'No details from WAAREE.' };
+  }
+  const mins = hhmmToMin(e.to) - hhmmToMin(e.from);
+  const lost = e.lost_wh != null && e.lost_wh >= 100 ? ` About ${fmtKwh(e.lost_wh)} missed.` : '';
+  const title = e.kind === 'no_data' ? 'Inverter went quiet' : 'Power cut';
+  const why = e.kind === 'no_data' ? 'No readings reached WAAREE.' : 'The panels made nothing while the inverter stayed online.';
+  return {
+    icon: e.kind === 'no_data' ? 'ic-clock' : 'ic-alert', cls: e.kind, title,
+    at: e.ongoing ? `since ${from}` : `${from} to ${to12h(e.to)}`,
+    detail: `${e.ongoing ? 'Still going.' : fmtDuration(mins) + '.'} ${why}${lost}`,
+  };
+}
+function renderLog() {
+  const events = state.events || [];
+  let out = '<div class="log"><h3 class="log-head">Log</h3>';
+  if (!events.length) {
+    return out + '<p class="log-empty">Nothing to report. Power cuts, times the inverter goes quiet, and inverter alarms will show up here.</p></div>';
+  }
+  const shown = events.slice(0, logShown);
+  out += '<ol class="log-list">' + shown.map(e => {
+    const l = logLine(e);
+    return `<li class="log-row ${l.cls}${e.ongoing ? ' ongoing' : ''}">
+      <div class="log-when"><span class="d">${fmtLogDay(e.date)}</span><span class="t">${l.at}</span></div>
+      <svg class="log-icon" width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><use href="#${l.icon}"/></svg>
+      <div class="log-what"><b>${l.title}</b><span>${l.detail}</span></div>
+    </li>`;
+  }).join('') + '</ol>';
+  if (events.length > shown.length) {
+    out += `<button type="button" class="log-more" id="log-more">Load more</button>`;
+  }
+  return out + '</div>';
 }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 

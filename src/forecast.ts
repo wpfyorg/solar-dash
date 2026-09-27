@@ -230,7 +230,7 @@ function buildDay(
     }
     // Hourly sky, day and night, for the hero's weather backdrop.
     if (withSeries && Math.round(s.min + 7.5) % 60 === 0) {
-      sky.push({ t: hhmm(s.min), code: s.code, cloud: Math.round(s.cloud) });
+      sky.push({ t: hhmm(s.min), code: s.code, cloud: Math.round(s.cloud), temp: Math.round(s.tempC) });
     }
   }
   return {

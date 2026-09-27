@@ -183,6 +183,7 @@ export function mockPoll(
     devices,
     alarms,
     forecast: null,
+    events: [],
   };
 
   return state;

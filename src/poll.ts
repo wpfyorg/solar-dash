@@ -17,6 +17,7 @@
 import { Client, ClientError } from "./client";
 import type { Env } from "./env";
 import { isMock, plantOverrides } from "./env";
+import { findOutages, updateEvents } from "./events";
 import { buildForecast, fetchOpenMeteo, mockWeather, type PanelSetup } from "./forecast";
 import * as mapping from "./mapping";
 import { mockPoll, type MockScenario } from "./mock";
@@ -25,6 +26,7 @@ import {
   defaultYear,
   unconfiguredState,
   type Forecast,
+  type LogEvent,
   type Plant,
   type State,
 } from "./model";
@@ -109,7 +111,8 @@ export async function runPoll(env: Env, nowOverrideParam?: number | null): Promi
 
     const merged = mergeUpdate(prevState, newState, doHistory, doYesterday);
     applyPlantOverrides(merged.plant, env);
-    merged.forecast = await refreshForecast(env, merged, prevState?.forecast ?? null, now);
+    merged.forecast = await refreshForecast(env, merged, prevState?.forecast ?? null, prevState?.events ?? [], now);
+    merged.events = logEvents(merged, prevState?.events ?? []);
     recomputeStaleness(merged);
     await putState(env, merged);
 
@@ -180,7 +183,13 @@ function applyPlantOverrides(plant: Plant, env: Env): void {
 /** Keeps the stored forecast for up to an hour (same day only), then
  * refetches. A failed fetch keeps the previous forecast if it's still for
  * today — a forecast an hour or two old beats none. */
-async function refreshForecast(env: Env, state: State, prev: Forecast | null, now: number): Promise<Forecast | null> {
+async function refreshForecast(
+  env: Env,
+  state: State,
+  prev: Forecast | null,
+  events: LogEvent[],
+  now: number
+): Promise<Forecast | null> {
   if (env.FORECAST === "0") return null;
   const serverNow = parseRfc3339(state.server_now) ?? now;
   const [y, m, d] = mapping.civilToday(serverNow);
@@ -208,6 +217,8 @@ async function refreshForecast(env: Env, state: State, prev: Forecast | null, no
   }
   const [yy, ym, yd] = mapping.civilYesterday(y, m, d);
   if (state.yesterday.produced_wh > 0) actual[fmtDate([yy, ym, yd])] = state.yesterday.produced_wh;
+  // A day with a power cut says nothing about how well the panels work.
+  for (const e of events) if (e.kind !== "alarm") delete actual[e.date];
 
   try {
     let weather;
@@ -234,6 +245,23 @@ async function refreshForecast(env: Env, state: State, prev: Forecast | null, no
     console.error("forecast failed:", e instanceof Error ? e.message : String(e));
     return prevToday;
   }
+}
+
+/** Adds today's outages and alarms to the kept log. */
+function logEvents(state: State, prev: LogEvent[]): LogEvent[] {
+  const serverNow = parseRfc3339(state.server_now) ?? nowSeconds();
+  const todayIso = fmtDate(mapping.civilToday(serverNow));
+  const fc = state.forecast && state.forecast.today.date === todayIso ? state.forecast.today.series : null;
+  const [h, mi] = mapping.localHHMM(serverNow).split(":").map(Number);
+  const outages = findOutages({
+    series: state.today.series,
+    forecast: fc,
+    sunrise: state.sun.sunrise,
+    sunset: state.sun.sunset,
+    nowMin: h! * 60 + mi!,
+    capacityW: state.plant.capacity_w,
+  });
+  return updateEvents(prev, todayIso, outages, state.alarms);
 }
 
 function recomputeStaleness(state: State): void {
@@ -339,6 +367,7 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
     devices: [],
     alarms: [],
     forecast: null,
+    events: [],
   };
 
   if (state.plant.price_per_kwh !== null) {
