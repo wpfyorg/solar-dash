@@ -20,6 +20,7 @@ const copies = [
   ["manifest.webmanifest", "manifest.webmanifest"],
   ["sw.js", "sw.js"],
   ["font.woff2", "font.woff2"],
+  ["icons/logo.svg", "icons/logo.svg"],
   ["icons/icon-192.png", "icons/icon-192.png"],
   ["icons/icon-512.png", "icons/icon-512.png"],
   ["icons/icon-512-maskable.png", "icons/icon-512-maskable.png"],

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" width="104" height="104" alt="WAAREE Solar Dashboard logo">
+</p>
+
 # WAAREE Solar Dashboard
 
 Self-hosted **WAAREE PV Hub / FoxESS solar dashboard** with live generation,
