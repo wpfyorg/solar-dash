@@ -4,7 +4,7 @@
 // Registered only when `isSecureContext` (see index.html) — service workers
 // need HTTPS or localhost, so on a plain http://solar.lan the page still
 // works as an add-to-home-screen app, it just always fetches fresh.
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = `waaree-dash-${CACHE_VERSION}`;
 const SHELL = [
   '/',
