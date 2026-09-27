@@ -371,12 +371,22 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
       const [yy, ym, yd] = mapping.civilYesterday(y, m, d);
       const rawYesterday = await client.historyRawDay(stationId, vars, yy, ym, yd);
       const ycurve = mapping.curveFromHistory(rawYesterday, hasMeter);
-      // Yesterday's counter total (in this month's report unless today is
-      // the 1st); its curve is scaled to match so "by now" compares AC to AC.
-      const yCounter = d > 1 ? mapping.reportDayWh(monthReport, d - 1) : null;
+      // Yesterday's counter total. On the 1st it lives in the previous
+      // month's report; scale the curve to match so "by now" compares AC to AC.
+      let yCounter = d > 1 ? mapping.reportDayWh(monthReport, d - 1) : null;
+      if (d === 1) {
+        try {
+          const prevMonthReport = await client.historyReport(stationId, "month", ["generation"], yy, ym);
+          yCounter = mapping.reportDayWh(prevMonthReport, yd);
+        } catch {
+          // Fall back to comparing both raw DC curves below.
+        }
+      }
+      const cutoff = mapping.localHHMM(now);
+      const yesterdayByNow = mapping.energyUpTo(ycurve.points, cutoff);
       const scale = yCounter !== null && ycurve.produced_wh > 0 ? yCounter / ycurve.produced_wh : 1;
-      state.today.vs_yesterday_wh =
-        state.today.produced_wh - mapping.energyUpTo(ycurve.points, mapping.localHHMM(now)) * scale;
+      const todayComparable = yCounter !== null ? state.today.produced_wh : mapping.energyUpTo(curve.points, cutoff);
+      state.today.vs_yesterday_wh = todayComparable - yesterdayByNow * scale;
       state.yesterday = { series: ycurve.points, produced_wh: yCounter ?? ycurve.produced_wh };
     } catch {
       // non-essential

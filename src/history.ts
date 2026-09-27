@@ -170,7 +170,7 @@ export async function dayDetail(env: Env, dateParam: string | null): Promise<Day
   // What the weather allowed that day, to find cuts in the curve.
   let weather: DayWeather | null = null;
   let events: LogEvent[] = [];
-  let weatherOk = false;
+  let weatherOk = env.FORECAST === "0";
   const setup = state ? panelSetup(env, state.plant) : null;
   if (setup && env.FORECAST !== "0") {
     try {

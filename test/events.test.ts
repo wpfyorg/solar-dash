@@ -43,6 +43,10 @@ describe("findOutages", () => {
     expect(out).toEqual([expect.objectContaining({ kind: "no_data", from: 392, to: 995, ongoing: false })]);
   });
 
+  it("does not call an empty day an outage before sunrise", () => {
+    expect(findOutages({ ...base, series: [], forecast: forecast(1900), nowMin: 300 })).toHaveLength(0);
+  });
+
   it("ignores zero output when the forecast expected almost nothing", () => {
     const s = series(785, (t) => (t >= 723 && t <= 770 ? 0 : 400));
     expect(findOutages({ ...base, series: s, forecast: forecast(90), nowMin: 785 })).toHaveLength(0);
