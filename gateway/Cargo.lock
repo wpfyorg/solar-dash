@@ -502,6 +502,7 @@ dependencies = [
  "argh",
  "env_logger",
  "log",
+ "ring",
  "rustls",
  "rustls-pemfile",
  "serde",

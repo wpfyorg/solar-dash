@@ -15,8 +15,11 @@ pub struct PushCfg {
     pub token: String,
 }
 
-fn post(cfg: &PushCfg, batch: &[Out]) -> Result<(), String> {
-    let body = serde_json::json!({ "records": batch });
+/// WAAREE link as the dashboard shows it: (mode, since unix time).
+pub type LinkNow = (&'static str, u32);
+
+fn post(cfg: &PushCfg, batch: &[Out], link: LinkNow) -> Result<(), String> {
+    let body = serde_json::json!({ "records": batch, "link": { "mode": link.0, "since": link.1 } });
     ureq::AgentBuilder::new()
         .timeout(Duration::from_secs(30))
         .build()
@@ -31,14 +34,19 @@ fn post(cfg: &PushCfg, batch: &[Out]) -> Result<(), String> {
 }
 
 /// One push round. Returns records delivered.
-pub fn push_round(cfg: &PushCfg, sink: &Mutex<Sink>) -> usize {
+/// Status only, when the link changed and there are no records waiting.
+pub fn push_status(cfg: &PushCfg, link: LinkNow) -> bool {
+    post(cfg, &[], link).map_err(|e| log::warn!("status push failed: {e}")).is_ok()
+}
+
+pub fn push_round(cfg: &PushCfg, sink: &Mutex<Sink>, link: LinkNow) -> usize {
     let mut sent = 0;
     for _ in 0..MAX_BATCHES_PER_ROUND {
         let batch = sink.lock().unwrap().batch(BATCH);
         if batch.is_empty() {
             break;
         }
-        match post(cfg, &batch) {
+        match post(cfg, &batch, link) {
             Ok(()) => {
                 sink.lock().unwrap().done(&batch);
                 sent += batch.len();
