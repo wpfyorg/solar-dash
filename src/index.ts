@@ -16,6 +16,7 @@ import {
 } from "./auth";
 import type { Env } from "./env";
 import { BadRequest, dayDetail, monthDetail } from "./history";
+import { handleIngest } from "./ingest";
 import { claimPollLock, runPoll } from "./poll";
 import { serializeState, unconfiguredState } from "./model";
 
@@ -65,6 +66,11 @@ export default {
 
     if (pathname === "/logout" && req.method === "POST") {
       return withSecurityHeaders(handleLogout());
+    }
+
+    // The stick gateway authenticates with its own bearer token, not a session.
+    if (pathname === "/api/ingest") {
+      return withSecurityHeaders(await handleIngest(req, env));
     }
 
     if (!isPublicPath(pathname)) {

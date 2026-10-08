@@ -208,6 +208,14 @@ export interface LogEvent {
   detail: string | null; // alarm text
 }
 
+/** The stick gateway's link to WAAREE's cloud. "relaying": the stick talks
+ * to WAAREE through the gateway; "down": WAAREE is unreachable or silent and
+ * the gateway answers instead; "off": relay not configured. */
+export interface WaareeLink {
+  mode: "relaying" | "down" | "off" | "unknown";
+  since: string; // RFC 3339 UTC
+}
+
 export interface State {
   status: Status;
   server_now: string;
@@ -223,6 +231,8 @@ export interface State {
   alarms: Alarm[];
   forecast: Forecast | null;
   events: LogEvent[]; // newest first
+  // Null when no stick gateway is feeding the dashboard.
+  waaree_link: WaareeLink | null;
 }
 
 export function unconfiguredState(nowIso: string): State {
@@ -241,6 +251,7 @@ export function unconfiguredState(nowIso: string): State {
     alarms: [],
     forecast: null,
     events: [],
+    waaree_link: null,
   };
 }
 
