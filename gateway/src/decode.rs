@@ -23,10 +23,11 @@ pub enum DecodeError {
 /// 32-bit second count); how it maps to wall-clock time is resolved by the
 /// Worker (see STICK_CLOCK_OFFSET_MIN there).
 ///
-/// Confidence: ac_w, grid_v, ac_a, hz, pv_v, pv_a, life_wh, day_wh are
-/// confirmed against the day shape (night 0, midday peak, monotonic lifetime
-/// counter, v*i ~ p). temps and state are plausible but need a reading from
-/// the inverter display; `unk75` is unidentified.
+/// Confirmed against the inverter display (2026-10-08): ac_w, grid_v, ac_a,
+/// hz, pv_v, pv_a, life_wh. `day_wh` is the inverter's own "E today", which
+/// resets on the inverter's wrong day boundary: a diagnostic, never a day
+/// total (use `life_wh` deltas). Temps and `state` are plausible but
+/// unconfirmed; `unk75` is unidentified.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Record {
     pub ts: u32,
