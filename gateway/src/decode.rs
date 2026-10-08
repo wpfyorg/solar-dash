@@ -69,8 +69,22 @@ pub fn decode_payload(p: &[u8]) -> Result<Record, DecodeError> {
     if inner.device[0] != 2 || inner.device[1..] != p[0..3] || inner.func != p[3] {
         return Err(DecodeError::TsMismatch);
     }
-    let b = &inner.payload;
-    Ok(Record {
+    Ok(from_body(ts, &inner.payload))
+}
+
+/// The stick's current ("live") sample, sent every ~5 min as a bare 7e
+/// frame: device = 02 + clock bytes 0..3, func = clock byte 3, payload = the
+/// same 160-byte body the 7f replay wraps.
+pub fn decode_live(device: [u8; 4], func: u8, payload: &[u8]) -> Result<Record, DecodeError> {
+    if device[0] != 2 || payload.len() != BODY_LEN {
+        return Err(DecodeError::Layout);
+    }
+    let ts = u32::from_be_bytes([device[1], device[2], device[3], func]);
+    Ok(from_body(ts, payload))
+}
+
+fn from_body(ts: u32, b: &[u8]) -> Record {
+    Record {
         ts,
         ac_w: w(b, 1),
         grid_v: w(b, 3) as f64 / 10.0,
@@ -86,7 +100,7 @@ pub fn decode_payload(p: &[u8]) -> Result<Record, DecodeError> {
         state: w(b, 74),
         flags: w(b, 58),
         unk75: w(b, 75),
-    })
+    }
 }
 
 #[cfg(test)]
@@ -110,6 +124,30 @@ mod tests {
         assert_eq!(r.ts, 0x6a5de65b);
         assert_eq!((r.ac_w, r.grid_v, r.pv_v, r.life_wh, r.state), (103, 230.1, 248.7, 582_700, 2));
         assert!((r.hz - 49.99).abs() < 1e-4);
+    }
+
+    #[test]
+    fn live_frames_match_the_replay_layout() {
+        let live: Vec<Record> = include_str!("../tests/live.hex")
+            .lines()
+            .map(|l| {
+                let mut it = l.split(' ');
+                let (d, f, p) = (it.next().unwrap(), it.next().unwrap(), it.next().unwrap());
+                let dev: Vec<u8> = (0..4).map(|i| u8::from_str_radix(&d[2 * i..2 * i + 2], 16).unwrap()).collect();
+                let pl: Vec<u8> = (0..p.len() / 2).map(|i| u8::from_str_radix(&p[2 * i..2 * i + 2], 16).unwrap()).collect();
+                decode_live([dev[0], dev[1], dev[2], dev[3]], u8::from_str_radix(f, 16).unwrap(), &pl).unwrap()
+            })
+            .collect();
+        assert!(live.len() >= 5);
+        for pair in live.windows(2) {
+            let dt = pair[1].ts - pair[0].ts;
+            assert!((250..400).contains(&dt), "live samples {dt} s apart");
+        }
+        // First live sample: 1389 W at 233.5 V, 5.9 A, 49.91 Hz (v*i ~ p).
+        let r = live.iter().find(|r| r.ac_w == 1389).expect("known sample");
+        assert_eq!((r.grid_v, r.ac_a, r.hz), (233.5, 5.9, 49.91));
+        assert_eq!(decode_live([6, 0, 0, 0], 0, &[0; 160]), Err(DecodeError::Layout));
+        assert_eq!(decode_live([2, 0, 0, 0], 0, &[0; 10]), Err(DecodeError::Layout));
     }
 
     #[test]

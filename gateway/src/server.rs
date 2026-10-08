@@ -2,7 +2,7 @@
 //! time in practice; a new connection replaces the old one's session.
 
 use crate::clock::{heartbeat_tail, ClockSync};
-use crate::decode::{decode_payload, DecodeError};
+use crate::decode::{decode_live, decode_payload, DecodeError, Record};
 use crate::protocol::{data_ack, extract_frames, registration_serial, AckMode, Bootstrap};
 use crate::rawlog::RawLog;
 use crate::sink::Sink;
@@ -187,28 +187,36 @@ async fn handle<S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin>(mut io:
                     *sh.clock.lock().unwrap() = clock;
                     sh.sink.lock().unwrap().convert(&clock, 90.0, false);
                 }
-            } else if f.payload.len() == 186 {
-                match decode_payload(&f.payload) {
-                    Ok(rec) => {
-                        sh.stats.records.fetch_add(1, Relaxed);
-                        if seen.insert(rec.ts) {
-                            sh.stats.unique.fetch_add(1, Relaxed);
-                            let mut s = sh.sink.lock().unwrap();
-                            s.add(rec);
-                            s.convert(&clock, 90.0, false);
-                        }
+            }
+            // Records come two ways: the replay of buffered samples (7f, 186 B)
+            // and the live sample every ~5 min (7e, device 02.., 160 B).
+            let decoded: Option<Result<Record, DecodeError>> = if f.is_7f() && f.payload.len() == 186 {
+                Some(decode_payload(&f.payload))
+            } else if !f.is_7f() && f.device[0] == 2 && f.payload.len() == 160 {
+                Some(decode_live(f.device, f.func, &f.payload))
+            } else {
+                None
+            };
+            match decoded {
+                None => {}
+                Some(Ok(rec)) => {
+                    sh.stats.records.fetch_add(1, Relaxed);
+                    if seen.insert(rec.ts) {
+                        sh.stats.unique.fetch_add(1, Relaxed);
+                        let mut s = sh.sink.lock().unwrap();
+                        s.add(rec);
+                        s.convert(&clock, 90.0, false);
+                    }
+                    if f.is_7f() {
                         if let Some(a) = data_ack(ack_from_u8(sh.ack.load(Relaxed)), &f) {
                             replies.push(a);
                             sh.stats.acks.fetch_add(1, Relaxed);
                         }
                     }
-                    Err(e) => {
-                        sh.stats.decode_err.fetch_add(1, Relaxed);
-                        log::warn!("session {session}: decode: {}", match e {
-                            DecodeError::Length(n) => format!("length {n}"),
-                            other => format!("{other:?}"),
-                        });
-                    }
+                }
+                Some(Err(e)) => {
+                    sh.stats.decode_err.fetch_add(1, Relaxed);
+                    log::warn!("session {session}: decode: {e:?}");
                 }
             }
             for r in replies {
