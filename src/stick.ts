@@ -4,6 +4,8 @@
 // only solar figures are filled in.
 //
 // KV keys:
+//   stick_link        - the gateway's WAAREE link {mode, since}; written only
+//                       when the mode changes
 //   stick:YYYY-MM-DD  - that plant-local day's records, sorted by time. One
 //                       write per ingest per day touched; ingest never
 //                       writes `state` (poll.ts folds this in on its own
@@ -11,7 +13,7 @@
 
 import type { Env } from "./env";
 import * as mapping from "./mapping";
-import { makeCurvePoint, type CurvePoint, type Month, type MonthDay, type State } from "./model";
+import { makeCurvePoint, type CurvePoint, type Month, type MonthDay, type State, type WaareeLink } from "./model";
 
 export interface StickRecord {
   t: number; // real unix seconds (the gateway maps the stick's clock)
@@ -268,5 +270,35 @@ export async function overlayStick(env: Env, state: State, nowSec: number): Prom
     if (d0) d0.produced_wh = null;
     fillMonthDays(state.month, totals);
   }
+  return true;
+}
+
+const LINK_MODES = new Set(["relaying", "down", "off", "unknown"]);
+
+/** Validates the `link` object a gateway push carries. */
+export function parseLink(x: unknown): WaareeLink | null {
+  if (!x || typeof x !== "object") return null;
+  const o = x as Record<string, unknown>;
+  const since = num(o.since);
+  if (typeof o.mode !== "string" || !LINK_MODES.has(o.mode) || since === null || since < 1577836800) return null;
+  return { mode: o.mode as WaareeLink["mode"], since: mapping.isoFromUnix(since) };
+}
+
+export async function loadLink(env: Env): Promise<WaareeLink | null> {
+  if (!stickEnabled(env)) return null;
+  const raw = await env.SOLAR_KV.get("stick_link");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as WaareeLink;
+  } catch {
+    return null;
+  }
+}
+
+/** Stores the link only when its mode differs from the stored one. */
+export async function storeLink(env: Env, link: WaareeLink): Promise<boolean> {
+  const have = await loadLink(env);
+  if (have && have.mode === link.mode) return false;
+  await env.SOLAR_KV.put("stick_link", JSON.stringify(link));
   return true;
 }

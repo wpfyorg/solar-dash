@@ -188,6 +188,7 @@ export function mockPoll(
     alarms,
     forecast: null,
     events: [],
+    waaree_link: null,
   };
 
   return state;

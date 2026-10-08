@@ -31,7 +31,7 @@ import {
   type State,
 } from "./model";
 import * as sun from "./sun";
-import { overlayStick, stickEnabled } from "./stick";
+import { loadLink, overlayStick, stickEnabled } from "./stick";
 
 const HISTORY_INTERVAL_SECONDS = 15 * 60; // "history... only if older than 15 min"
 const YESTERDAY_INTERVAL_SECONDS = 60 * 60; // refreshed hourly
@@ -131,6 +131,7 @@ export async function runPoll(env: Env, nowOverrideParam?: number | null): Promi
     const merged = mergeUpdate(prevState, newState, doHistory, doYesterday);
     applyPlantOverrides(merged.plant, env);
     const fromStick = await overlayStick(env, merged, now);
+    merged.waaree_link = await loadLink(env);
     if (failure && !fromStick) {
       await applyError(env, failure);
       return;
@@ -384,6 +385,7 @@ async function livePoll(env: Env, doHistory: boolean, doYesterday: boolean, prev
     alarms: [],
     forecast: null,
     events: [],
+    waaree_link: null,
   };
 
   if (state.plant.price_per_kwh !== null) {

@@ -4,7 +4,7 @@
 
 import { constantTimeEqual } from "./auth";
 import type { Env } from "./env";
-import { parseRecord, storeRecords, stickEnabled, type StickRecord } from "./stick";
+import { parseLink, parseRecord, storeLink, storeRecords, stickEnabled, type StickRecord } from "./stick";
 
 const MAX_BODY = 1_000_000;
 const MAX_RECORDS = 2000;
@@ -42,5 +42,7 @@ export async function handleIngest(req: Request, env: Env): Promise<Response> {
     if (r) recs.push(r);
   }
   const added = await storeRecords(env, recs);
-  return json({ ok: true, received: list.length, valid: recs.length, added });
+  const link = parseLink((body as { link?: unknown }).link);
+  const linkChanged = link ? await storeLink(env, link) : false;
+  return json({ ok: true, received: list.length, valid: recs.length, added, link_changed: linkChanged });
 }

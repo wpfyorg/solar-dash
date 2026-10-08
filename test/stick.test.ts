@@ -5,6 +5,7 @@ import { unconfiguredState } from "../src/model";
 import {
   dayProducedWh,
   fillMonthDays,
+  loadLink,
   localDate,
   localHHMM,
   mergeRecords,
@@ -129,6 +130,32 @@ describe("POST /api/ingest", () => {
     const again = await (await post(kv, { records: recs })).json();
     expect(again).toMatchObject({ added: 0 });
     expect(kv.puts).toBe(2); // nothing new, nothing written
+  });
+});
+
+describe("WAAREE link", () => {
+  const post = (kv: FakeKV, body: unknown) =>
+    handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify(body) }), env(kv));
+  const since = DAY0 + 100;
+
+  it("is stored on change only, with no records needed", async () => {
+    const kv = new FakeKV();
+    expect(await loadLink(env(kv))).toBeNull();
+    expect(await (await post(kv, { records: [], link: { mode: "down", since } })).json()).toMatchObject({ link_changed: true });
+    expect(kv.puts).toBe(1);
+    expect(await loadLink(env(kv))).toEqual({ mode: "down", since: "2026-10-07T18:31:40Z" });
+    expect(await (await post(kv, { records: [], link: { mode: "down", since: since + 60 } })).json()).toMatchObject({ link_changed: false });
+    expect(kv.puts).toBe(1);
+    await post(kv, { records: [], link: { mode: "relaying", since: since + 120 } });
+    expect((await loadLink(env(kv)))!.mode).toBe("relaying");
+    expect(kv.puts).toBe(2);
+  });
+
+  it("ignores junk", async () => {
+    const kv = new FakeKV();
+    await post(kv, { records: [], link: { mode: "weird", since } });
+    await post(kv, { records: [], link: "x" });
+    expect(kv.puts).toBe(0);
   });
 });
 
