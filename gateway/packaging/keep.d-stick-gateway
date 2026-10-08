@@ -1,0 +1,4 @@
+/usr/bin/stick-gateway
+/etc/init.d/stick-gateway
+/etc/stick-gateway.json
+/etc/stick-gateway/
