@@ -11,6 +11,7 @@ A self-hosted Cloudflare Worker dashboard for WAAREE PV Hub (a white-labelled Fo
 ```bash
 npm run dev          # sync-assets, then wrangler dev
 npm run deploy       # sync-assets, then wrangler deploy
+npm run deploy:live  # sync-assets, then wrangler deploy -c wrangler.live.jsonc (gitignored production config)
 npm run typecheck    # tsc --noEmit (strict, noUncheckedIndexedAccess)
 npm test             # vitest run
 npx vitest run test/forecast.test.ts        # one test file

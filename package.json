@@ -11,6 +11,8 @@
     "predeploy": "npm run sync-assets",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "predeploy:live": "npm run sync-assets",
+    "deploy:live": "wrangler deploy -c wrangler.live.jsonc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

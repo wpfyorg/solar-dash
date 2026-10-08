@@ -9,5 +9,7 @@ public/font.woff2
 public/icons/
 *.log
 
-# Personal deploy config (real KV id + coordinates): npx wrangler deploy -c wrangler.local.jsonc
+# Personal deploy configs (real KV id + coordinates): npx wrangler deploy -c wrangler.local.jsonc,
+# and the production one used by npm run deploy:live.
 wrangler.local.jsonc
+wrangler.live.jsonc

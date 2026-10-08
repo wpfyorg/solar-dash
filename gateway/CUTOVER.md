@@ -4,11 +4,19 @@ Run these yourself, in order. Nothing here was applied by an agent.
 
 ## 1. Worker (after merging `feat/stick-ingest`)
 
+Every command here takes `-c` with your deploy config (`wrangler.live.jsonc`
+for production, `wrangler.local.jsonc` for a test Worker; both gitignored).
+Without it, wrangler uses `wrangler.jsonc`, whose Worker `name` may be your
+live one: a bare `secret put` then replaces the live token and AP2's pushes
+start failing with HTTP 401.
+
 ```bash
-openssl rand -hex 24                      # copy this token
-npx wrangler secret put INGEST_TOKEN      # paste it
-npm run deploy
+openssl rand -hex 24                                          # copy this token
+npx wrangler secret put INGEST_TOKEN -c wrangler.live.jsonc   # paste it
+npm run deploy:live
 ```
+
+Changing `INGEST_TOKEN` later means re-running step 2 with the new token.
 
 ## 2. Point AP2 at the Worker
 
