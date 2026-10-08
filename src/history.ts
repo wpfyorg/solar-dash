@@ -19,6 +19,7 @@ import { buildDay, DEFAULT_PR, fetchOpenMeteo, mockWeather, panelSetup } from ".
 import * as mapping from "./mapping";
 import type { CurvePoint, DayWeather, LogEvent, Month, State } from "./model";
 import * as sun from "./sun";
+import { dayCurve, dayProducedWh, fillMonthDays, loadDay, monthFromTotals, monthTotals, stickEnabled, tzMin } from "./stick";
 
 const DAY_CACHE_TTL = 400 * 86400;
 const MONTH_CACHE_TTL = 400 * 86400;
@@ -142,9 +143,17 @@ export async function dayDetail(env: Env, dateParam: string | null): Promise<Day
   const cached = await env.SOLAR_KV.get(key);
   if (cached) return withAlarms(JSON.parse(cached) as DayDetail, alarms);
 
+  // The stick's own records, for days WAAREE's cloud never got (or can't
+  // serve any more). They are already in KV, so nothing is cached here.
+  const stickRecs = stickEnabled(env) ? await loadDay(env, date) : [];
+  const fromStick = stickRecs.length >= 3;
+
   let series: CurvePoint[];
   let curveWh: number;
-  if (state && dayNum === todayNum - 1 && state.yesterday.series.length) {
+  if (fromStick) {
+    series = dayCurve(stickRecs, tzMin(env));
+    curveWh = dayProducedWh(stickRecs);
+  } else if (state && dayNum === todayNum - 1 && state.yesterday.series.length) {
     series = state.yesterday.series;
     curveWh = state.yesterday.produced_wh;
   } else if (isMock(env)) {
@@ -161,6 +170,7 @@ export async function dayDetail(env: Env, dateParam: string | null): Promise<Day
   // not the curve's DC integral; see mapping.ts.
   let counterWh: number | null = null;
   try {
+    if (fromStick) throw new Error("stick day");
     const month = await monthDetail(env, `${y}-${pad(m)}`);
     counterWh = month.days.find((x) => x.day === d)?.produced_wh ?? null;
   } catch {
@@ -243,11 +253,25 @@ export async function monthDetail(env: Env, ymParam: string | null): Promise<Mon
     return { ...(state?.month ?? { days: [], total_wh: 0, best_day: null }), month: m, year: y } as Month;
   }
 
-  const report = await withClient(env, (c, sid) => c.historyReport(sid, "month", ["generation"], y, m));
-  const month = mapping.monthFromReport(report, y, m, isCurrent ? td : null, beforeInstall);
-  // A month is only final once it's over and its data has arrived.
-  if (!isCurrent && month.days.length) {
-    await env.SOLAR_KV.put(key, JSON.stringify(month), { expirationTtl: MONTH_CACHE_TTL });
+  let month: Month;
+  try {
+    const report = await withClient(env, (c, sid) => c.historyReport(sid, "month", ["generation"], y, m));
+    month = mapping.monthFromReport(report, y, m, isCurrent ? td : null, beforeInstall);
+    // A month is only final once it's over and its data has arrived.
+    if (!isCurrent && month.days.length) {
+      await env.SOLAR_KV.put(key, JSON.stringify(month), { expirationTtl: MONTH_CACHE_TTL });
+    }
+  } catch (e) {
+    // WAAREE unreachable: whatever the stick recorded is better than an error.
+    if (!stickEnabled(env)) throw e;
+    const totals = await monthTotals(env, y, m);
+    if (totals.size === 0) throw e;
+    return monthFromTotals(y, m, isCurrent ? td : null, totals);
+  }
+  // Days the cloud has nothing for (it went quiet) come from the stick. Not
+  // cached above, so this never freezes a half-filled month.
+  if (stickEnabled(env) && month.days.some((x) => !x.not_installed && !x.produced_wh)) {
+    fillMonthDays(month, await monthTotals(env, y, m));
   }
   return month;
 }

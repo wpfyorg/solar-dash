@@ -31,6 +31,7 @@ import {
   type State,
 } from "./model";
 import * as sun from "./sun";
+import { overlayStick, stickEnabled } from "./stick";
 
 const HISTORY_INTERVAL_SECONDS = 15 * 60; // "history... only if older than 15 min"
 const YESTERDAY_INTERVAL_SECONDS = 60 * 60; // refreshed hourly
@@ -64,7 +65,7 @@ function nowSeconds(): number {
 }
 
 function isConfigured(env: Env): boolean {
-  return isMock(env) || Boolean(env.WAAREE_USERNAME && env.WAAREE_PASSWORD_MD5);
+  return isMock(env) || Boolean(env.WAAREE_USERNAME && env.WAAREE_PASSWORD_MD5) || stickEnabled(env);
 }
 
 /** Guards against concurrent polls (e.g. several stale GET /api/state hits
@@ -99,25 +100,48 @@ export async function runPoll(env: Env, nowOverrideParam?: number | null): Promi
     0;
 
   try {
-    const newState = isMock(env)
-      ? mockPoll(
-          (env.MOCK_SCENARIO as MockScenario) || "design",
-          doHistory,
-          doYesterday,
-          prevHomeW,
-          resolveMockNow(env, nowOverrideParam)
-        )
-      : await livePoll(env, doHistory, doYesterday, prevHomeW);
+    let newState: State | null = null;
+    let failure: unknown = null;
+    if (isMock(env)) {
+      newState = mockPoll(
+        (env.MOCK_SCENARIO as MockScenario) || "design",
+        doHistory,
+        doYesterday,
+        prevHomeW,
+        resolveMockNow(env, nowOverrideParam)
+      );
+    } else if (env.WAAREE_USERNAME && env.WAAREE_PASSWORD_MD5) {
+      try {
+        newState = await livePoll(env, doHistory, doYesterday, prevHomeW);
+      } catch (e) {
+        failure = e;
+      }
+    }
+    if (!newState) {
+      // WAAREE unreachable (or not configured): carry the last state forward
+      // so the stick's records can still update it.
+      const base = prevState ?? unconfiguredState(mapping.nowIso());
+      newState = { ...base, server_now: mapping.nowIso() };
+      if (!newState.sun.sunrise) {
+        const [y, m, d] = mapping.civilToday(now);
+        newState.sun = sun.sunTimes(parseFloat(env.LAT) || sun.DEFAULT_LAT, parseFloat(env.LON) || sun.DEFAULT_LON, y, m, d);
+      }
+    }
 
     const merged = mergeUpdate(prevState, newState, doHistory, doYesterday);
     applyPlantOverrides(merged.plant, env);
+    const fromStick = await overlayStick(env, merged, now);
+    if (failure && !fromStick) {
+      await applyError(env, failure);
+      return;
+    }
     merged.forecast = await refreshForecast(env, merged, prevState?.forecast ?? null, prevState?.events ?? [], now);
     merged.events = logEvents(merged, prevState?.events ?? []);
     recomputeStaleness(merged);
     await putState(env, merged);
 
-    if (doHistory) await env.SOLAR_KV.put("history_at", String(now));
-    if (doYesterday) await env.SOLAR_KV.put("yesterday_at", String(now));
+    if (doHistory && !failure) await env.SOLAR_KV.put("history_at", String(now));
+    if (doYesterday && !failure) await env.SOLAR_KV.put("yesterday_at", String(now));
   } catch (e) {
     await applyError(env, e);
   }

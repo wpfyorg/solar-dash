@@ -26,6 +26,8 @@ export interface Env {
   WAAREE_PASSWORD_MD5?: string;
   DASH_PASSWORD?: string;
   SESSION_SECRET?: string;
+  // Bearer token the stick gateway pushes with (POST /api/ingest). Unset = ingest off.
+  INGEST_TOKEN?: string;
 }
 
 export function isMock(env: Env): boolean {
