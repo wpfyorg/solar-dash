@@ -19,7 +19,8 @@ ssh -o BatchMode=yes "$HOST" "umask 077; cat > /etc/stick-gateway.json" <<JSON
   "push_url": "$URL",
   "push_token": "$TOKEN",
   "push_interval_s": 300,
-  "ack_mode": "none"
+  "ack_mode": "none",
+  "relay": { "enabled": true, "upstream": "34.93.70.153:14431", "connect_timeout_s": 10, "reply_timeout_s": 30, "probe_interval_s": 600, "pin_sha256": "" }
 }
 JSON
 ssh -o BatchMode=yes "$HOST" '/etc/init.d/stick-gateway restart' </dev/null

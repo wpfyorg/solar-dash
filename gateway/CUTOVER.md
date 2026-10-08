@@ -90,3 +90,11 @@ The stick then goes back to the (dead) WAAREE cloud.
 - Raw frames: `/tmp/stick-gw/frames.jsonl` (RAM, rotates at 1 MiB, plus `.1`).
 - Try a data-ACK variant live, no restart: `echo mirror7e > /tmp/stick-gw/ack_mode` (also `mirror7f`, `ts7e`, `none`). Compare `unique/s` and `resend%` over ~10 min each.
 - Remove: `/etc/init.d/stick-gateway disable; stop; rm /usr/bin/stick-gateway /etc/init.d/stick-gateway /etc/stick-gateway.json; rm -r /etc/stick-gateway /lib/upgrade/keep.d/stick-gateway`.
+
+## WAAREE relay (on by default in the shipped config)
+
+- The stick is relayed to `34.93.70.153:14431` while that answers; the gateway only listens in (decodes, pushes) and sends no replies of its own. `set-push.sh` writes the `relay` block; an AP2 config without it keeps relaying off.
+- Mute or dead upstream: if nothing comes back within 30 s of the stick registering (or the connect fails), the gateway drops it and answers locally; the stick sees only a ~30 s delay.
+- Switching back happens only between sessions. A probe (TLS connect, every 10 min, backing off to 1 h) flags the upstream as back, the local session is closed, the stick reconnects and the relay is tried again. If it is still mute, the cycle repeats. A TLS connect alone does not prove the cloud works: as of 2026-10-08 it accepts TLS (cert sha256 `4d123da9fe38054deb16303327f3822c1a742d328d654655f60b743389da73c3`) but never answers.
+- Set `"pin_sha256"` to that value to refuse any other certificate; every connect logs the fingerprint.
+- `state.waaree_link` on the Worker carries `relaying | down | off | unknown`.
