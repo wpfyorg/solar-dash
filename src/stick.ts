@@ -232,8 +232,10 @@ export async function overlayStick(env: Env, state: State, nowSec: number): Prom
   const [today, yesterday] = await Promise.all([loadDay(env, todayD), loadDay(env, yesterdayD)]);
   const latest = today[today.length - 1] ?? yesterday[yesterday.length - 1];
   if (!latest) return false;
-  // The stick wins only while it is the fresher source.
-  if (latest.t <= parseIso(state.live.updated_at)) return false;
+  // WAAREE's updated_at is our poll time, not its data time, so a poll that
+  // got only zeros (cloud gone, or night) always looks newer. Defer to it
+  // only while it reports real output; otherwise the stick is the source.
+  if (state.live.solar_w > 0 && latest.t <= parseIso(state.live.updated_at)) return false;
 
   const price = state.plant.price_per_kwh;
   state.has_meter = false;
@@ -260,10 +262,13 @@ export async function overlayStick(env: Env, state: State, nowSec: number): Prom
     state.today.vs_yesterday_wh = producedToday - mapping.energyUpTo(yPoints, cutoff);
   }
 
-  // Keep the month calendar and the sun times current for today/yesterday.
+  // Keep the month calendar current: every stored stick day this month fills
+  // a day the cloud left empty (up to 31 KV reads a poll, well inside the
+  // read budget), and today's figure always comes from the stick.
   const [ty, tm, td] = mapping.civilFromDays(Math.floor((nowSec + tz * 60) / 86400));
   if (state.month.days.length && state.month.year === ty && state.month.month === tm) {
-    const totals = new Map<number, number>([[td, producedToday]]);
+    const totals = await monthTotals(env, ty, tm);
+    totals.set(td, producedToday);
     if (yesterdayD.slice(0, 7) === todayD.slice(0, 7) && producedYesterday > 0) totals.set(td - 1, producedYesterday);
     // Today's cloud figure is stale or missing; overwrite it, not just fill.
     const d0 = state.month.days.find((d) => d.day === td);

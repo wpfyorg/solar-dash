@@ -206,14 +206,48 @@ describe("overlayStick", () => {
     expect(st.month.best_day!.day).toBe(8);
   });
 
-  it("stays out of the way when WAAREE's data is newer", async () => {
+  it("stays out of the way when WAAREE is newer and reports output", async () => {
     const kv = new FakeKV();
     const e = env(kv);
     await handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify({ records: morning() }) }), e);
     const st = unconfiguredState("2026-10-08T06:31:00Z");
     st.live.updated_at = "2026-10-08T06:31:00Z";
+    st.live.solar_w = 1500;
     expect(await overlayStick(e, st, nowSec)).toBe(false);
     expect(st.today.series).toHaveLength(0);
+  });
+
+  it("takes over from a newer WAAREE poll that only got zeros", async () => {
+    const kv = new FakeKV();
+    const e = env(kv);
+    await handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify({ records: morning() }) }), e);
+    const st = unconfiguredState("2026-10-08T06:31:00Z");
+    st.live.updated_at = "2026-10-08T06:31:00Z"; // poll time, after the stick's last sample
+    expect(await overlayStick(e, st, nowSec)).toBe(true);
+    expect(st.live.solar_w).toBe(2000);
+    expect(st.today.peak_w).toBe(2000);
+  });
+
+  it("fills earlier days of the month from stored stick days", async () => {
+    const kv = new FakeKV();
+    const e = env(kv);
+    const earlier = morning(1500, 400_000).map((r) => ({ ...r, t: r.t - 3 * 86400 })); // Oct 5
+    const body = { records: [...earlier, ...morning()] };
+    await handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify(body) }), e);
+    const st = unconfiguredState("2026-10-08T06:30:00Z");
+    st.month = {
+      year: 2026,
+      month: 10,
+      total_wh: 0,
+      best_day: null,
+      days: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, produced_wh: i < 8 ? 0 : null, not_installed: false })),
+    };
+    st.month.days[3]!.produced_wh = 1100; // Oct 4: the cloud's own figure stays
+    expect(await overlayStick(e, st, nowSec)).toBe(true);
+    expect(st.month.days[4]!.produced_wh).toBeGreaterThan(3000); // Oct 5, from the stick
+    expect(st.month.days[3]!.produced_wh).toBe(1100);
+    expect(st.month.days[5]!.produced_wh).toBe(0); // Oct 6: no stick data, stays 0
+    expect(st.month.total_wh).toBe(1100 + st.month.days[4]!.produced_wh! + st.month.days[7]!.produced_wh!);
   });
 
   it("reports a stale stick as zero output, not ok", async () => {
