@@ -31,11 +31,11 @@ pub enum DecodeError {
 pub struct Record {
     pub ts: u32,
     pub ac_w: u16,
-    pub grid_v: f32,
-    pub ac_a: f32,
-    pub hz: f32,
-    pub pv_v: f32,
-    pub pv_a: f32,
+    pub grid_v: f64,
+    pub ac_a: f64,
+    pub hz: f64,
+    pub pv_v: f64,
+    pub pv_a: f64,
     pub temp_a: u16,
     pub temp_b: u16,
     pub temp_c: u16,
@@ -73,11 +73,11 @@ pub fn decode_payload(p: &[u8]) -> Result<Record, DecodeError> {
     Ok(Record {
         ts,
         ac_w: w(b, 1),
-        grid_v: w(b, 3) as f32 / 10.0,
-        ac_a: w(b, 4) as f32 / 10.0,
-        hz: w(b, 5) as f32 / 100.0,
-        pv_v: w(b, 15) as f32 / 10.0,
-        pv_a: w(b, 16) as f32 / 10.0,
+        grid_v: w(b, 3) as f64 / 10.0,
+        ac_a: w(b, 4) as f64 / 10.0,
+        hz: w(b, 5) as f64 / 100.0,
+        pv_v: w(b, 15) as f64 / 10.0,
+        pv_a: w(b, 16) as f64 / 10.0,
         temp_a: w(b, 27),
         temp_b: w(b, 28),
         temp_c: w(b, 29),
@@ -143,7 +143,7 @@ mod tests {
         // V*I tracks AC power once the load is real (0.1 A is coarse at low
         // power; the odd sample is instantaneous vs averaged).
         let loaded: Vec<_> = recs.iter().filter(|r| r.ac_w > 800).collect();
-        let off = loaded.iter().filter(|r| (r.grid_v * r.ac_a - r.ac_w as f32).abs() / r.ac_w as f32 > 0.1).count();
+        let off = loaded.iter().filter(|r| (r.grid_v * r.ac_a - r.ac_w as f64).abs() / r.ac_w as f64 > 0.1).count();
         assert!(loaded.len() > 30 && off * 20 <= loaded.len(), "{off} of {} off", loaded.len());
         // Over the pairs close enough together to integrate, the lifetime
         // counter agrees with integrating AC power.

@@ -1,0 +1,11 @@
+{
+  "listen": "0.0.0.0:14431",
+  "cert": "/etc/stick-gateway/cert.pem",
+  "key": "/etc/stick-gateway/key.pem",
+  "log_dir": "/tmp/stick-gw",
+  "log_max_bytes": 1048576,
+  "push_url": "",
+  "push_token": "",
+  "push_interval_s": 300,
+  "ack_mode": "none"
+}

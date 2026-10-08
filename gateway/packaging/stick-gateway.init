@@ -1,0 +1,17 @@
+#!/bin/sh /etc/rc.common
+# procd service for stick-gateway on the OpenWrt AP.
+START=99
+USE_PROCD=1
+
+start_service() {
+	mkdir -p /tmp/stick-gw
+	procd_open_instance
+	procd_set_param command /usr/bin/stick-gateway --config /etc/stick-gateway.json
+	procd_set_param env RUST_LOG=info
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	# A bug must not be able to starve the AP's other services.
+	procd_set_param limits as="64000000 64000000"
+	procd_close_instance
+}
