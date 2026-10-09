@@ -206,14 +206,27 @@ describe("overlayStick", () => {
     expect(st.month.best_day!.day).toBe(8);
   });
 
-  it("stays out of the way when WAAREE is newer and reports output", async () => {
+  it("wins over a newer WAAREE poll with output while fresh", async () => {
     const kv = new FakeKV();
     const e = env(kv);
     await handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify({ records: morning() }) }), e);
     const st = unconfiguredState("2026-10-08T06:31:00Z");
     st.live.updated_at = "2026-10-08T06:31:00Z";
     st.live.solar_w = 1500;
-    expect(await overlayStick(e, st, nowSec)).toBe(false);
+    expect(await overlayStick(e, st, nowSec)).toBe(true);
+    expect(st.live.solar_w).toBe(2000);
+    expect(st.today.series.length).toBeGreaterThan(50);
+  });
+
+  it("falls back to WAAREE with output once the stick is stale", async () => {
+    const kv = new FakeKV();
+    const e = env(kv);
+    await handleIngest(new Request("https://x", { method: "POST", headers: { Authorization: "Bearer sekrit" }, body: JSON.stringify({ records: morning() }) }), e);
+    const st = unconfiguredState("2026-10-08T09:00:00Z");
+    st.live.updated_at = "2026-10-08T09:00:00Z";
+    st.live.solar_w = 1500;
+    expect(await overlayStick(e, st, nowSec + 3 * 3600)).toBe(false);
+    expect(st.live.solar_w).toBe(1500);
     expect(st.today.series).toHaveLength(0);
   });
 

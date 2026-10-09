@@ -1,6 +1,6 @@
 // Data from the stick gateway (gateway/ in this repo): the inverter's own
-// 5-minute records, pushed to POST /api/ingest by a daemon on the LAN, used
-// when WAAREE's cloud has nothing newer. The stick has no energy meter, so
+// 5-minute records, pushed to POST /api/ingest by a daemon on the LAN. The
+// primary source while fresh; WAAREE's cloud is the backup. The stick has no energy meter, so
 // only solar figures are filled in.
 //
 // KV keys:
@@ -232,15 +232,18 @@ export async function overlayStick(env: Env, state: State, nowSec: number): Prom
   const [today, yesterday] = await Promise.all([loadDay(env, todayD), loadDay(env, yesterdayD)]);
   const latest = today[today.length - 1] ?? yesterday[yesterday.length - 1];
   if (!latest) return false;
-  // WAAREE's updated_at is our poll time, not its data time, so a poll that
-  // got only zeros (cloud gone, or night) always looks newer. Defer to it
-  // only while it reports real output; otherwise the stick is the source.
-  if (state.live.solar_w > 0 && latest.t <= parseIso(state.live.updated_at)) return false;
+  // The stick is the primary source: while it is fresh it wins outright,
+  // since WAAREE's cloud keeps gaps and lags even when it is up. WAAREE is the
+  // backup once the stick goes quiet, but only while it reports real output:
+  // its updated_at is our poll time, not its data time, so a poll that got
+  // only zeros (cloud gone, or night) always looks newer.
+  const fresh = nowSec - latest.t <= STICK_FRESH_S;
+  if (!fresh && state.live.solar_w > 0 && latest.t <= parseIso(state.live.updated_at)) return false;
 
   const price = state.plant.price_per_kwh;
   state.has_meter = false;
-  state.live = { solar_w: nowSec - latest.t <= STICK_FRESH_S ? latest.ac_w : 0, home_w: null, export_w: null, import_w: null, updated_at: mapping.isoFromUnix(latest.t) };
-  if (nowSec - latest.t <= STICK_FRESH_S) state.status = "ok";
+  state.live = { solar_w: fresh ? latest.ac_w : 0, home_w: null, export_w: null, import_w: null, updated_at: mapping.isoFromUnix(latest.t) };
+  if (fresh) state.status = "ok";
 
   const tPoints = dayCurve(today, tz);
   const yPoints = dayCurve(yesterday, tz);
